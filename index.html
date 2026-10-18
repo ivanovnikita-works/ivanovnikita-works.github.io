@@ -5837,6 +5837,8 @@ window.addEventListener(&#x27;resize&#x27;,fitPage,{passive:true});fitPage();
     "project-duvet": "Duvet"
   });
   function routeFromUrl() {
+    const path = window.location.pathname.match(/^\/projects\/([a-z0-9-]+)\/(?:index\.html)?$/);
+    if (path && slugToRoute[path[1]]) return slugToRoute[path[1]];
     const params = new URLSearchParams(window.location.search);
     const project = params.get("project");
     if (project && slugToRoute[project]) return slugToRoute[project];
@@ -5848,8 +5850,8 @@ window.addEventListener(&#x27;resize&#x27;,fitPage,{passive:true});fitPage();
     const url = new URL(window.location.href);
     url.searchParams.delete("project");
     url.searchParams.delete("page");
-    if (routeToSlug[route]) url.searchParams.set("project", routeToSlug[route]);
-    else if (route === "gallery" || route === "contacts") url.searchParams.set("page", route);
+    url.pathname = routeToSlug[route] ? "/projects/" + routeToSlug[route] + "/" : "/";
+    if (route === "gallery" || route === "contacts") url.searchParams.set("page", route);
     return url.pathname + url.search + url.hash;
   }
   function updateRouteTitle(route) {
@@ -6051,7 +6053,13 @@ window.addEventListener(&#x27;resize&#x27;,fitPage,{passive:true});fitPage();
   ["mag", "brand", "mmag", "mbrand"].forEach(render);
   window.addEventListener("resize", () => ["mag", "brand", "mmag", "mbrand"].forEach(render));
 
-  applyRoute(routeFromUrl());
+  const firstRoute = routeFromUrl();
+  // Existing ?project= links keep working; once opened, the address becomes
+  // the permanent project URL with its own Telegram/Open Graph preview.
+  if (routeToSlug[firstRoute] && location.pathname === "/") {
+    history.replaceState({route:firstRoute}, "", urlForRoute(firstRoute));
+  }
+  applyRoute(firstRoute);
 })();
 </script>
 <script>

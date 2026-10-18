@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UPNIGHT — айдентика безалкогольных напитков | IVANOV NIKITA</title>
+<meta name="description" content="UPNIGHT: дизайн логотипа, этикеток и упаковки безалкогольных напитков со вкусами классических коктейлей.">
+<link rel="canonical" href="https://ivanovnikita-works.github.io/projects/upnight/">
+<meta name="robots" content="index,follow">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="IVANOV NIKITA">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:title" content="UPNIGHT — айдентика безалкогольных напитков | IVANOV NIKITA">
+<meta property="og:description" content="UPNIGHT: дизайн логотипа, этикеток и упаковки безалкогольных напитков со вкусами классических коктейлей.">
+<meta property="og:url" content="https://ivanovnikita-works.github.io/projects/upnight/">
+<meta property="og:image" content="https://ivanovnikita-works.github.io/assets/project_cover_upnight_v113.jpg">
+<meta property="og:image:alt" content="UPNIGHT — айдентика безалкогольных напитков">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="UPNIGHT — айдентика безалкогольных напитков | IVANOV NIKITA">
+<meta name="twitter:description" content="UPNIGHT: дизайн логотипа, этикеток и упаковки безалкогольных напитков со вкусами классических коктейлей.">
+<meta name="twitter:image" content="https://ivanovnikita-works.github.io/assets/project_cover_upnight_v113.jpg">
+<link rel="icon" href="/favicon-blue.svg" type="image/svg+xml">
+<style>html,body{margin:0;font:14px Arial,sans-serif;background:#fff;color:#262626}main{min-height:60vh;display:grid;place-content:center;text-align:center;padding:24px}a{color:inherit}</style>
+</head>
+<body>
+<main>
+<h1>UPNIGHT — айдентика безалкогольных напитков</h1>
+<p>UPNIGHT: дизайн логотипа, этикеток и упаковки безалкогольных напитков со вкусами классических коктейлей.</p>
+<p><a href="/?project=upnight">Открыть проект</a></p>
+</main>
+<script>(function(){
+  var slug="upnight";
+  function fallback(){
+    var params=new URLSearchParams(location.search);
+    params.set('project',slug);
+    location.replace('/?'+params.toString()+location.hash);
+  }
+  fetch('/index.html',{credentials:'same-origin'})
+    .then(function(r){if(!r.ok)throw new Error('Site unavailable');return r.text();})
+    .then(function(html){
+      if(!/<head(?:\s[^>]*)?>/i.test(html))throw new Error('Invalid site document');
+      html=html.replace(/<head(?:\s[^>]*)?>/i,function(tag){return tag+'<base href="/">';});
+      document.open();
+      document.write(html);
+      document.close();
+    })
+    .catch(fallback);
+})();</script>
+</body>
+</html>

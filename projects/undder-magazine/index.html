@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>UNDDER Magazine — независимый журнал | IVANOV NIKITA</title>
+<meta name="description" content="UNDDER Magazine: авторская фотография, визуальные эксперименты и редакционный дизайн. Работы 2020–2023 годов.">
+<link rel="canonical" href="https://ivanovnikita-works.github.io/projects/undder-magazine/">
+<meta name="robots" content="index,follow">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="IVANOV NIKITA">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:title" content="UNDDER Magazine — независимый журнал | IVANOV NIKITA">
+<meta property="og:description" content="UNDDER Magazine: авторская фотография, визуальные эксперименты и редакционный дизайн. Работы 2020–2023 годов.">
+<meta property="og:url" content="https://ivanovnikita-works.github.io/projects/undder-magazine/">
+<meta property="og:image" content="https://ivanovnikita-works.github.io/assets/project_cover_undder_v113.png">
+<meta property="og:image:alt" content="UNDDER Magazine — независимый журнал">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="UNDDER Magazine — независимый журнал | IVANOV NIKITA">
+<meta name="twitter:description" content="UNDDER Magazine: авторская фотография, визуальные эксперименты и редакционный дизайн. Работы 2020–2023 годов.">
+<meta name="twitter:image" content="https://ivanovnikita-works.github.io/assets/project_cover_undder_v113.png">
+<link rel="icon" href="/favicon-blue.svg" type="image/svg+xml">
+<style>html,body{margin:0;font:14px Arial,sans-serif;background:#fff;color:#262626}main{min-height:60vh;display:grid;place-content:center;text-align:center;padding:24px}a{color:inherit}</style>
+</head>
+<body>
+<main>
+<h1>UNDDER Magazine — независимый журнал</h1>
+<p>UNDDER Magazine: авторская фотография, визуальные эксперименты и редакционный дизайн. Работы 2020–2023 годов.</p>
+<p><a href="/?project=undder-magazine">Открыть проект</a></p>
+</main>
+<script>(function(){
+  var slug="undder-magazine";
+  function fallback(){
+    var params=new URLSearchParams(location.search);
+    params.set('project',slug);
+    location.replace('/?'+params.toString()+location.hash);
+  }
+  fetch('/index.html',{credentials:'same-origin'})
+    .then(function(r){if(!r.ok)throw new Error('Site unavailable');return r.text();})
+    .then(function(html){
+      if(!/<head(?:\s[^>]*)?>/i.test(html))throw new Error('Invalid site document');
+      html=html.replace(/<head(?:\s[^>]*)?>/i,function(tag){return tag+'<base href="/">';});
+      document.open();
+      document.write(html);
+      document.close();
+    })
+    .catch(fallback);
+})();</script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Scale Clock — настольные часы | IVANOV NIKITA</title>
+<meta name="description" content="Предметный дизайн часов Scale Clock с двумя циферблатами для Москвы и Токио. Проект Никиты Иванова.">
+<link rel="canonical" href="https://ivanovnikita-works.github.io/projects/scale-clock/">
+<meta name="robots" content="index,follow">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="IVANOV NIKITA">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:title" content="Scale Clock — настольные часы | IVANOV NIKITA">
+<meta property="og:description" content="Предметный дизайн часов Scale Clock с двумя циферблатами для Москвы и Токио. Проект Никиты Иванова.">
+<meta property="og:url" content="https://ivanovnikita-works.github.io/projects/scale-clock/">
+<meta property="og:image" content="https://ivanovnikita-works.github.io/assets/project_cover_scale_clock_v113.png">
+<meta property="og:image:alt" content="Scale Clock — настольные часы">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Scale Clock — настольные часы | IVANOV NIKITA">
+<meta name="twitter:description" content="Предметный дизайн часов Scale Clock с двумя циферблатами для Москвы и Токио. Проект Никиты Иванова.">
+<meta name="twitter:image" content="https://ivanovnikita-works.github.io/assets/project_cover_scale_clock_v113.png">
+<link rel="icon" href="/favicon-blue.svg" type="image/svg+xml">
+<style>html,body{margin:0;font:14px Arial,sans-serif;background:#fff;color:#262626}main{min-height:60vh;display:grid;place-content:center;text-align:center;padding:24px}a{color:inherit}</style>
+</head>
+<body>
+<main>
+<h1>Scale Clock — настольные часы</h1>
+<p>Предметный дизайн часов Scale Clock с двумя циферблатами для Москвы и Токио. Проект Никиты Иванова.</p>
+<p><a href="/?project=scale-clock">Открыть проект</a></p>
+</main>
+<script>(function(){
+  var slug="scale-clock";
+  function fallback(){
+    var params=new URLSearchParams(location.search);
+    params.set('project',slug);
+    location.replace('/?'+params.toString()+location.hash);
+  }
+  fetch('/index.html',{credentials:'same-origin'})
+    .then(function(r){if(!r.ok)throw new Error('Site unavailable');return r.text();})
+    .then(function(html){
+      if(!/<head(?:\s[^>]*)?>/i.test(html))throw new Error('Invalid site document');
+      html=html.replace(/<head(?:\s[^>]*)?>/i,function(tag){return tag+'<base href="/">';});
+      document.open();
+      document.write(html);
+      document.close();
+    })
+    .catch(fallback);
+})();</script>
+</body>
+</html>
