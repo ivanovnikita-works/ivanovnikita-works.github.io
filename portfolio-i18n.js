@@ -8,9 +8,9 @@
   const boundSwitches=new WeakSet();
   const clean=s=>(s||'').replace(/\u00a0/g,' ').replace(/\s+/g,' ').trim();
   const cyr=/[а-яё]/i;
-  const baseTitle='IVANOV NIKITA — Design Portfolio';
+  const baseTitle='IVANOV NIKITA.';
   const RussianRoutes={
-    projects:'IVANOV NIKITA — Портфолио дизайнера',
+    projects:'IVANOV NIKITA.',
     gallery:'Галерея',contacts:'Контакты',
     'project-olya-magazine':'ОЛЯ magazine','project-olya-clothes':'ОЛЯ — мерч',
     'project-short-eye':'Short Eye','project-scale-clock':'Scale Clock',
@@ -160,17 +160,11 @@
       const title=route==='projects'?baseTitle:(EnglishRoutes[route]||'Project')+' — IVANOV NIKITA';
       if(document.title!==title)document.title=title;
     }else{
-      const title=route==='projects'?'IVANOV NIKITA — Портфолио дизайнера':
+      const title=route==='projects'?'IVANOV NIKITA.':
         (RussianRoutes[route]||'Проект')+' — IVANOV NIKITA';
       if(document.title!==title)document.title=title;
     }
-    const description=document.querySelector('meta[name="description"]');
-    if(description){
-      const text=language==='en'?
-        'Portfolio of Nikita Ivanov: visual identities, graphic design, editorial projects, packaging, apparel and creative direction.':
-        'Портфолио Никиты Иванова: айдентика, графический дизайн, журналы, упаковка, мерч и творческое руководство.';
-      if(description.content!==text)description.content=text;
-    }
+    // Keep social and SEO description fields empty in both languages.
   }
   function repaint(){
     scheduled=false;
