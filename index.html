@@ -1,45 +1,122 @@
 <!DOCTYPE html>
 
 <html lang="ru">
-<head><script id="portfolio-route-media-loader-v135">
-(function(){"use strict";
-  // Resolve every local asset from the site root, including srcdoc iframes and direct project URLs.
+<head><script id="portfolio-route-media-loader-v138">
+(function(){
+  "use strict";
+  // Absolute asset URLs work on the homepage, on directly opened project URLs,
+  // and inside the project's existing srcdoc iframes.
   window.__asset=function(path){
     if (!path || /^(?:[a-z][a-z0-9+.-]*:|\/\/|\/)/i.test(path)) return path;
     return new URL(path.replace(/^\.\//,''), window.location.origin + '/').href;
   };
-  // Load the visible route. All other project photos keep their asset address
-  // in data-embedded-asset until the user opens that project.
-  function mount(root){
-    (root||document).querySelectorAll('img[data-embedded-asset]').forEach(function(im){
-      if(im.hasAttribute('src'))return;
-      var page=im.closest('section.route-page');
-      if(page && !page.classList.contains('active'))return;
-      // Mobile browsers may postpone lazy images indefinitely in absolute-positioned artboards.
-      if (window.matchMedia && window.matchMedia('(max-width: 720px)').matches) im.loading='eager';
-      im.src=window.__asset(im.getAttribute('data-embedded-asset'));
+
+  var pending=new Set();
+  var registered=new WeakSet();
+  var io=null;
+  var timer=0;
+  var mobile=window.matchMedia && window.matchMedia('(max-width:720px)');
+  function active(img){
+    var page=img.closest('section.route-page');
+    return !page || page.classList.contains('active');
+  }
+  function near(img){
+    var r=img.getBoundingClientRect();
+    if (!r.width || !r.height) return false;
+    var vh=window.innerHeight || document.documentElement.clientHeight;
+    var vw=window.innerWidth || document.documentElement.clientWidth;
+    var margin=mobile && mobile.matches ? 750 : 850;
+    return r.top < vh+margin && r.bottom > -margin &&
+           r.left < vw+margin && r.right > -margin;
+  }
+  function load(img){
+    if (!img || img.hasAttribute('src')) {
+      if (img) pending.delete(img);
+      return;
+    }
+    if (!active(img)) return;
+    var path=img.getAttribute('data-embedded-asset');
+    if (!path) return;
+    // Once an image is near the viewport, prevent a second native lazy delay.
+    img.loading='eager';
+    img.decoding='async';
+    img.src=window.__asset(path);
+    pending.delete(img);
+    if (io) io.unobserve(img);
+  }
+  if ('IntersectionObserver' in window) {
+    try {
+      io=new IntersectionObserver(function(entries){
+        entries.forEach(function(entry){
+          if (entry.isIntersecting && active(entry.target)) load(entry.target);
+        });
+      }, {root:null, rootMargin:'850px 850px', threshold:0});
+    } catch(e) { io=null; }
+  }
+  function checkNear(){
+    pending.forEach(function(img){
+      if (!img.isConnected) {pending.delete(img);return;}
+      if (img.hasAttribute('src')) {pending.delete(img);return;}
+      if (active(img) && near(img)) load(img);
     });
+  }
+  function scheduleCheck(){
+    if (timer) return;
+    timer=setTimeout(function(){timer=0;checkNear();},140);
+  }
+  function mount(root){
+    if (!root) root=document;
+    if (root.nodeType===1 && root.matches && root.matches('img[data-embedded-asset]')) register(root);
+    root.querySelectorAll('img[data-embedded-asset]').forEach(register);
+    checkNear();
+  }
+  function register(img){
+    if (registered.has(img) || img.hasAttribute('src')) return;
+    registered.add(img);
+    pending.add(img);
+    if (io) io.observe(img);
   }
   window.__mountPortfolioAssets=mount;
   function init(){
     mount();
-    var sections=document.querySelectorAll('section.route-page');
-    var scheduled=false;
-    function schedule(){
-      if(scheduled)return;
-      scheduled=true;
-      queueMicrotask(function(){scheduled=false;mount();});
-    }
-    var observer=new MutationObserver(schedule);
-    observer.observe(document.body,{attributes:true,attributeFilter:['data-route'],childList:true,subtree:true});
-    sections.forEach(function(page){observer.observe(page,{attributes:true,attributeFilter:['class']});});
+    var routeObserver=new MutationObserver(scheduleCheck);
+    routeObserver.observe(document.body,{attributes:true,attributeFilter:['data-route']});
+    document.querySelectorAll('section.route-page').forEach(function(page){
+      routeObserver.observe(page,{attributes:true,attributeFilter:['class']});
+    });
+    // Observe newly inserted markup, but do not rescan the whole document
+    // on every DOM mutation, scroll frame, or image load.
+    var additions=new MutationObserver(function(records){
+      records.forEach(function(record){
+        record.addedNodes.forEach(function(node){
+          if (node.nodeType===1) {
+            if (node.matches && node.matches('img[data-embedded-asset]')) register(node);
+            if (node.querySelectorAll) node.querySelectorAll('img[data-embedded-asset]').forEach(register);
+          }
+        });
+      });
+      scheduleCheck();
+    });
+    additions.observe(document.body,{childList:true,subtree:true});
+    // The viewport check is also a fallback for older/mobile browsers
+    // with an absent, delayed or unreliable IntersectionObserver.
+    window.addEventListener('scroll',scheduleCheck,{passive:true});
+    window.addEventListener('resize',scheduleCheck,{passive:true});
+    window.addEventListener('touchend',scheduleCheck,{passive:true});
+    window.addEventListener('pageshow',scheduleCheck,{passive:true});
+    document.addEventListener('visibilitychange',function(){
+      if (!document.hidden) scheduleCheck();
+    });
+    setTimeout(checkNear,1100);
+    setTimeout(checkNear,2800);
   }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
+  if (document.readyState==='loading') document.addEventListener('DOMContentLoaded',init,{once:true});
   else init();
 })();
 </script>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link rel="preload" as="image" href="/assets/project_cover_olya_mag_v113.jpg" fetchpriority="high"/>
 <title>IVANOV NIKITA</title>
 <meta name="description" content=""/>
 <meta name="robots" content="index, follow"/>
@@ -61,7 +138,7 @@
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;min-height:100%;background:#fff;color:#000;font-family:Arial,Helvetica,sans-serif}
-/* v76: reserve a stable scrollbar gutter and scale designs against the visible content width. */
+
 html{scrollbar-gutter:stable;}
 body{overflow-x:hidden;container-type:inline-size;width:100%;}
 button{border:0;background:transparent;padding:0;color:inherit;font:inherit;cursor:pointer}
@@ -175,11 +252,11 @@ a{color:inherit;text-decoration:none}
   .footer-links{position:static;transform:none;display:grid;grid-template-columns:repeat(2,auto);justify-content:center;gap:18px 34px}
 }
 
-/* v11 OLYA magazine page */
+
 .olya-page{padding-top:0!important;background:#fff!important;min-height:auto!important}.olya-canvas{--s:calc(100cqw/1280);position:relative;width:100cqw;height:calc(8520*var(--s));min-height:8520px;background:#fff;overflow:hidden;color:#262626}.olya-canvas img{display:block}.olya-num{position:absolute;left:calc(41*var(--s));top:calc(202*var(--s));font:400 calc(10*var(--s))/1 Lato,Arial,sans-serif}.olya-title{position:absolute;left:calc(41*var(--s));top:calc(255*var(--s));width:calc(198*var(--s));font:700 calc(13*var(--s))/1 Lato,Arial,sans-serif;text-transform:uppercase}.olya-meta{position:absolute;left:calc(41*var(--s));top:calc(310*var(--s));width:calc(198*var(--s));font:300 calc(10*var(--s))/1 Lato,Arial,sans-serif;text-transform:uppercase}.olya-desc{position:absolute;left:calc(1041*var(--s));top:calc(203*var(--s));width:calc(167*var(--s));margin:0;font:300 calc(10*var(--s))/1 Lato,Arial,sans-serif}.olya-hero{position:absolute;left:calc(421*var(--s));top:calc(162*var(--s));width:calc(439*var(--s));height:calc(565*var(--s));overflow:hidden}.olya-hero img{position:absolute;height:122.98%;width:111.9%;left:-6.03%;top:-7.09%;max-width:none}.olya-text{position:absolute;left:calc(361*var(--s));top:calc(820*var(--s));width:calc(560*var(--s));font:400 calc(13.1*var(--s))/1.645 Inter,Arial,sans-serif;letter-spacing:calc(.28*var(--s));color:#373737}.olya-text p{margin:0 0 calc(17*var(--s))}.olya-text span{font-size:calc(22*var(--s));line-height:calc(28*var(--s));letter-spacing:calc(-.26*var(--s))}.olya-cover-main{position:absolute;left:calc(421*var(--s));top:calc(1442*var(--s));width:calc(434*var(--s));height:calc(614*var(--s));margin:0}.olya-cover-main img,.sitebig img,.siteimg img,.phone img,.mock img,.cover2 img,.cover3 img,.cover4 img,.box img{width:100%;height:100%;object-fit:cover}.olya-cap{position:absolute;font:300 calc(10*var(--s))/1 Lato,Arial,sans-serif;color:#262626}.cap1{left:calc(41*var(--s));top:calc(2034*var(--s));width:calc(198*var(--s))}.cap2{left:calc(41*var(--s));top:calc(3220*var(--s));width:calc(198*var(--s))}.cap3{left:calc(41*var(--s));top:calc(6208*var(--s));width:calc(198*var(--s))}.olya-black{position:absolute;left:calc(21*var(--s));width:calc(1235*var(--s));height:calc(628*var(--s));background:#000;overflow:hidden}.magazine-block{top:calc(2106*var(--s))}.mag-carousel{position:absolute;left:calc(342*var(--s));top:calc(128*var(--s));width:calc(549*var(--s));height:calc(372*var(--s))}.mag-slide{position:absolute;inset:0;display:none;gap:calc(23*var(--s));align-items:center}.mag-slide.active{display:flex}.mag-slide figure{width:calc(263*var(--s));height:calc(372*var(--s));margin:0;background:#f7f7f7;overflow:hidden}.mag-slide img{width:100%;height:100%;object-fit:cover}.blank{background:#f4f4f4!important}.download{display:flex;align-items:center;justify-content:center}.download a{color:#000;text-decoration:none;text-align:center;font:700 calc(13*var(--s))/1.12 Lato,Arial,sans-serif}.olya-arrow{position:absolute;z-index:2;top:50%;transform:translateY(-50%);color:#fff;font:400 calc(22*var(--s))/1 Arial,sans-serif;width:calc(60*var(--s));height:calc(60*var(--s));opacity:.85}.prev{left:calc(65*var(--s))}.next{right:calc(65*var(--s))}.olya-counter{position:absolute;right:calc(72*var(--s));bottom:calc(45*var(--s));color:#fff;font:300 calc(10*var(--s))/1 Lato,Arial,sans-serif;letter-spacing:.08em}.sitebig{position:absolute;left:calc(21*var(--s));top:calc(3357*var(--s));width:calc(1235*var(--s));height:calc(702*var(--s));margin:0}.site-block{top:calc(4084*var(--s))}.siteimg{position:absolute;left:calc(292*var(--s));top:calc(128*var(--s));width:calc(654*var(--s));height:calc(372*var(--s));margin:0}.phone{position:absolute;left:calc(640*var(--s));top:calc(4824*var(--s));width:calc(616*var(--s));height:calc(644*var(--s));margin:0;overflow:hidden}.phone img{height:132.63%;width:132.48%;margin-left:-16.24%;margin-top:-16.3%}.olya-digital{position:absolute;left:calc(21*var(--s));top:calc(4920*var(--s));width:calc(560*var(--s));font:400 calc(13.1*var(--s))/1.645 Inter,Arial,sans-serif;letter-spacing:calc(.28*var(--s));color:#373737}.olya-digital p{margin:0 0 calc(17*var(--s))}.olya-digital .head{font:400 calc(14*var(--s))/calc(16*var(--s)) Arial,sans-serif;text-transform:uppercase;letter-spacing:0}.brand-block{top:calc(5580*var(--s))}.brand-view{position:absolute;left:calc(52*var(--s));top:calc(128*var(--s));width:calc(1148*var(--s));height:calc(372*var(--s));overflow:hidden}.brand-track{display:flex;gap:calc(32*var(--s));height:100%;transition:transform .65s cubic-bezier(.19,1,.22,1)}.brand-track figure{flex:0 0 calc(263*var(--s));width:calc(263*var(--s));height:calc(372*var(--s));margin:0;background:#f4f4f4;overflow:hidden}.brand-track img{width:100%;height:100%;object-fit:cover}.mock{position:absolute;left:0;top:calc(6342*var(--s));width:calc(1295*var(--s));height:calc(628*var(--s));margin:0;overflow:hidden}.mock img{height:139.83%;width:101.58%;margin-left:.12%;margin-top:-19.6%}.cover2,.cover3,.cover4{position:absolute;width:calc(341*var(--s));height:calc(482*var(--s));margin:0}.cover2{left:calc(22*var(--s));top:calc(7091*var(--s))}.cover3{left:calc(467*var(--s));top:calc(7091*var(--s));width:calc(340*var(--s))}.cover4{left:calc(911*var(--s));top:calc(7085*var(--s));width:calc(345*var(--s));height:calc(488*var(--s))}.cap4{left:calc(21*var(--s));top:calc(7583*var(--s));width:calc(198*var(--s))}.cap5{left:calc(467*var(--s));top:calc(7584*var(--s));width:calc(198*var(--s))}.cap6{left:calc(911*var(--s));top:calc(7584*var(--s));width:calc(216*var(--s))}.box{position:absolute;left:calc(22*var(--s));top:calc(7721*var(--s));width:calc(1235*var(--s));height:calc(628*var(--s));margin:0;overflow:hidden}.box img{height:111.91%;width:100%;margin-top:-5.95%}.olya-bottom-nav{position:absolute!important;left:0;right:0;top:calc(8420*var(--s));margin:0!important}@media(max-width:720px){.olya-canvas{min-height:6700px}.olya-title,.olya-meta,.olya-num,.olya-desc{transform:scale(2.2);transform-origin:left top}.olya-text,.olya-digital{font-size:12px;line-height:1.45}}
 
 
-/* v12: OLYA mobile page from Figma node 184:15 */
+
 .olya-mobile-canvas {
   display: none;
 }
@@ -579,7 +656,7 @@ a{color:inherit;text-decoration:none}
 }
 
 
-/* v13: refined OLYA desktop from corrected Figma frame 173:149 */
+
 @media (min-width:721px){
   body[data-route="project-olya-magazine"] .site-header{height:109px!important;background:#fff!important;box-shadow:none!important;border:0!important;}
   body[data-route="project-olya-magazine"] .brand{left:45px!important;top:55px!important;transform:translateY(-100%)!important;width:111px!important;height:13px!important;font-family:"Lato",Arial,Helvetica,sans-serif!important;font-size:12px!important;line-height:1!important;font-weight:400!important;color:#262626!important;text-align:left!important;}
@@ -661,7 +738,7 @@ a{color:inherit;text-decoration:none}
 }
 
 
-/* v14: refined OLYA desktop sliders, dots, typography and caption spacing */
+
 @media (min-width:721px) {
   body[data-route="project-olya-magazine"] .site-header {
     height: 109px !important;
@@ -763,7 +840,7 @@ a{color:inherit;text-decoration:none}
     letter-spacing: 0 !important;
   }
 
-  /* captions are exactly where they sit in the Figma frame */
+  
   .olya-desktop-v13 .cap-first-cover { left: calc(21 * var(--s)) !important; top: calc(2034 * var(--s)) !important; }
   .olya-desktop-v13 .cap-first-issue { left: calc(21 * var(--s)) !important; top: calc(2734 * var(--s)) !important; }
   .olya-desktop-v13 .cap-spreads { left: calc(40 * var(--s)) !important; top: calc(3279 * var(--s)) !important; }
@@ -772,7 +849,7 @@ a{color:inherit;text-decoration:none}
   .olya-desktop-v13 .cap-cover3 { left: calc(467 * var(--s)) !important; top: calc(7926 * var(--s)) !important; width: calc(340 * var(--s)) !important; }
   .olya-desktop-v13 .cap-cover4 { left: calc(911 * var(--s)) !important; top: calc(7932 * var(--s)) !important; width: calc(345 * var(--s)) !important; }
 
-  /* transparent click / drag zones: no arrows on top of the images */
+  
   .olya-desktop-v13 .od-hit {
     opacity: 0 !important;
     background: transparent !important;
@@ -792,7 +869,7 @@ a{color:inherit;text-decoration:none}
     touch-action: pan-y !important;
   }
 
-  /* Figma dots: active white dot moves with current slide */
+  
   .olya-desktop-v13 .od-dots {
     position: absolute !important;
     display: flex !important;
@@ -838,7 +915,7 @@ a{color:inherit;text-decoration:none}
 }
 
 
-/* v15: invisible side click zones for desktop sliders */
+
 @media (min-width:721px) {
   .olya-desktop-v13 .od-black {
     position: absolute !important;
@@ -875,7 +952,7 @@ a{color:inherit;text-decoration:none}
     right: 0 !important;
   }
 
-  /* на всякий случай: если у кнопок нет отдельных классов, распределяем их по порядку */
+  
   .olya-desktop-v13 .od-black > .od-hit:first-of-type {
     left: 0 !important;
     right: auto !important;
@@ -902,7 +979,7 @@ a{color:inherit;text-decoration:none}
 }
 
 
-/* v16: real uploaded OLYA images + real magazine/brandbook pages */
+
 @media (min-width:721px) {
   .olya-desktop-v13 .uploaded-exact > img,
   .olya-desktop-v13 .uploaded-exact img {
@@ -958,7 +1035,7 @@ a{color:inherit;text-decoration:none}
 }
 
 
-/* v17: lighter OLYA cover/spreads from ZIP, inserted as original bytes */
+
 @media (min-width:721px) {
   .olya-desktop-v13 .mag-slide figure img,
   .olya-desktop-v13 .od-cover-main img {
@@ -980,7 +1057,7 @@ a{color:inherit;text-decoration:none}
 }
 
 
-/* v19: image captions are 12px below their frames */
+
 @media (min-width:721px) {
   .olya-desktop-v13 .cap-first-cover { top: calc(2068 * var(--s)) !important; }
   .olya-desktop-v13 .cap-first-issue { top: calc(2746 * var(--s)) !important; }
@@ -1033,7 +1110,7 @@ a{color:inherit;text-decoration:none}
 }
 
 
-/* v20: one-file version, working side areas + clickable dots + 12px captions */
+
 @media (min-width:721px) {
   .olya-desktop-v13 .od-hit {
     position: absolute !important;
@@ -1103,7 +1180,7 @@ a{color:inherit;text-decoration:none}
   .olya-desktop-v13 .mag-dots { top: calc(559 * var(--s)) !important; }
   .olya-desktop-v13 .brand-dots { top: calc(561 * var(--s)) !important; }
 
-  /* captions: 12px after image/frame */
+  
   .olya-desktop-v13 .cap-first-cover { top: calc(2068 * var(--s)) !important; }
   .olya-desktop-v13 .cap-first-issue { top: calc(2746 * var(--s)) !important; }
   .olya-desktop-v13 .cap-spreads { top: calc(3291 * var(--s)) !important; }
@@ -1120,7 +1197,7 @@ a{color:inherit;text-decoration:none}
 }
 
 
-/* v21: ONLY New12 magazine images, click-only sliders, no drag */
+
 @media (min-width:721px) {
   .olya-desktop-v13 .od-black {
     cursor: default !important;
@@ -1203,7 +1280,7 @@ a{color:inherit;text-decoration:none}
 }
 
 
-/* v23: original New12 colors loaded once, smooth magazine slider, no blank brandbook pages */
+
 @media (min-width:721px) {
   .olya-desktop-v13 .mag-slide {
     display: flex !important;
@@ -1279,7 +1356,7 @@ a{color:inherit;text-decoration:none}
 }
 
 
-/* Performance: composite only the active project and limit repaint areas. */
+
 .route-page:not(.active) { display:none !important; }
 .olya-desktop-v13 .od-magazine-block, .olya-desktop-v13 .od-brandbook-block { isolation:isolate; }
 .olya-desktop-v13 .mag-slide { transition:opacity .28s ease-out !important; }
@@ -1289,7 +1366,7 @@ a{color:inherit;text-decoration:none}
 @media (prefers-reduced-motion:reduce) { .olya-desktop-v13 .mag-slide,.olya-desktop-v13 .brand-track {transition:none!important;} }
 
 
-/* v27: OLYA merch HTML embedded into the same portfolio site */
+
 body[data-route="project-olya-clothes"] .portfolio-page{
   padding-top:0!important;
   padding-bottom:0!important;
@@ -1328,7 +1405,7 @@ body[data-route="project-olya-clothes"] .site-header{display:block!important;}
 
 
 
-/* v28: keep OLYA merch mobile from v10 inside the common journal HTML */
+
 @media(max-width:720px){
   body[data-route="project-olya-clothes"] .portfolio-page,
   body[data-route="project-olya-clothes"] .merch-page-embedded{
@@ -1345,7 +1422,7 @@ body[data-route="project-olya-clothes"] .site-header{display:block!important;}
 }
 
 
-/* v29 Short Eye desktop detail page */
+
 .short-eye-page{padding-top:0!important;background:#fff!important;min-height:auto!important;}
 .se-canvas{--s:calc(100cqw / 1280);position:relative;width:100cqw;height:calc(10240 * var(--s));min-height:10240px;background:#fff;overflow:hidden;color:#262626;}
 .se-stage{position:absolute;left:0;top:0;width:1280px;height:10240px;transform:scale(var(--s));transform-origin:top left;background:#fff;}
@@ -1376,7 +1453,7 @@ body[data-route="project-olya-clothes"] .site-header{display:block!important;}
 }
 
 
-/* Short Eye exact transfer from Figma node 190:264 */
+
 .short-eye-figma-page{padding:0!important;background:#fff!important;overflow:hidden!important;}
 .sefx-canvas{--sefx-scale:calc(100cqw / 1280);position:relative;width:100cqw;height:calc(10171px * (100cqw / 1280));background:#fff;overflow:hidden;color:#262626;}
 .sefx-stage{position:absolute;left:0;top:0;width:1280px;height:10171px;background:#fff;transform:scale(var(--sefx-scale,1));transform-origin:top left;overflow:hidden;}
@@ -1401,8 +1478,7 @@ body[data-route="project-olya-clothes"] .site-header{display:block!important;}
 .sefx-black{position:absolute;background:#000;}
 @media(max-width:720px){.short-eye-figma-page .site-header{display:none!important}.sefx-canvas{height:calc(10171px * (100cqw / 1280));}.sefx-stage{transform:scale(var(--sclock-scale,1));}}
 
-/* v31 fix: browser-safe Figma scaling for Short Eye.
-   Previous calc(10171px * (100cqw / 1280)) collapsed in browsers. */
+
 .sefx-canvas{
   --sefx-scale: 1;
   height: 794.609375cqw !important;
@@ -1423,7 +1499,7 @@ body[data-route="project-short-eye"] .portfolio-page{
 }
 
 
-/* Short Eye mobile transfer from Figma node 497:106 */
+
 .semob-canvas{display:none;position:relative;width:100cqw;background:#fff;overflow:hidden;color:#262626;}
 .semob-stage{position:absolute;left:0;top:0;width:390px;height:8723px;background:#fff;transform-origin:top left;overflow:hidden;}
 .semob-stage *{box-sizing:border-box;}
@@ -1454,7 +1530,7 @@ body[data-route="project-short-eye"] .portfolio-page{
 }
 
 
-/* v33 Short Eye desktop redone from Figma node 338:106 */
+
 .sefx-stage-v33{width:1280px!important;height:10171px!important;background:#fff;}
 .sefx-stage-v33 .sefx-title{position:absolute;width:198px;height:39px;margin:0;font:700 13px/1 Lato,Arial,sans-serif;color:#262626;text-transform:uppercase;}
 .sefx-stage-v33 .sefx-meta{position:absolute;width:198px;height:22px;margin:0;font:300 10px/1.1 Lato,Arial,sans-serif;color:#262626;text-transform:uppercase;}
@@ -1464,7 +1540,7 @@ body[data-route="project-short-eye"] .portfolio-page{
 .sefx-stage-v33 .sefx-img img{display:block;position:absolute;max-width:none;pointer-events:none;}
 
 
-/* v34 Short Eye desktop corrections */
+
 body[data-route="project-short-eye"] > .site-header{display:none!important;}
 body[data-route="project-short-eye"] .portfolio-page{padding-top:0!important;}
 .short-eye-figma-page.active{display:block!important;}
@@ -1493,7 +1569,7 @@ body[data-route="project-short-eye"] .portfolio-page{padding-top:0!important;}
 @media(max-width:720px){body[data-route="project-short-eye"] > .site-header{display:none!important;}body[data-route="project-short-eye"] .sefx-canvas{display:none!important;}body[data-route="project-short-eye"] .semob-canvas{display:block!important;}.short-eye-figma-page{min-height:0!important;}.semob-canvas{margin:0 auto!important;}}
 
 
-/* v35 Scale Clock desktop transfer from Figma node 334:106 */
+
 .scale-clock-figma-page{padding:0!important;background:#fff!important;overflow:hidden!important;}
 .sclock-canvas{position:relative;width:100cqw;height:calc(6279px * (100cqw / 1280));min-height:6279px;background:#fff;overflow:hidden;}
 .sclock-stage{position:absolute;left:0;top:0;width:1280px;height:6279px;background:#fff;transform-origin:top left;transform:scale(var(--sclock-scale,1));overflow:hidden;}
@@ -1519,7 +1595,7 @@ body[data-route="project-scale-clock"] > .site-header{display:none!important;}
 body[data-route="project-scale-clock"] .portfolio-page{padding-top:0!important;}
 
 
-/* v36: desktop ratio fix — use the same 1280px -> 100cqw scaling principle as OLYA magazine. */
+
 @media (min-width:721px){
   .short-eye-figma-page .sefx-canvas,
   body[data-route="project-short-eye"] .sefx-canvas{
@@ -1553,7 +1629,7 @@ body[data-route="project-scale-clock"] .portfolio-page{padding-top:0!important;}
   }
 }
 
-/* v37: Scale Clock mobile frame from Figma node 352:106 */
+
 .sclock-mobile-canvas{display:none;}
 .sclock-mobile-stage{position:absolute;left:0;top:0;width:390px;height:6067px;background:#fff;transform-origin:top left;overflow:hidden;}
 .sclock-mobile-stage *{box-sizing:border-box;}
@@ -1584,7 +1660,7 @@ body[data-route="project-scale-clock"] .portfolio-page{padding-top:0!important;}
 
 
 
-/* v39 UNDDER magazine desktop from Figma node 348:106 */
+
 .undder-magazine-page{background:#fff;padding:0!important;overflow:hidden;}
 .undder-canvas{position:relative;width:100cqw;height:calc(12108px * (100cqw / 1280));overflow:hidden;background:#fff;margin:0!important;padding:0!important;}
 .undder-stage{position:absolute;left:0;top:0;width:1280px;height:12108px;background:#fff;transform-origin:top left;}
@@ -1609,7 +1685,7 @@ body[data-route="project-undder-magazine"] .portfolio-page{padding-top:0!importa
 @media(max-width:720px){.undder-canvas{height:calc(12108px * (100cqw / 1280));}.undder-stage{transform:scale(calc(100cqw / 1280));}}
 
 
-/* v40: interactive sliders inside UNDDER black frames */
+
 .undder-slider{position:absolute;overflow:hidden;background:#000;}
 .undder-slider-bg{position:absolute;inset:0;background:#000;}
 .undder-slider-track{
@@ -1671,7 +1747,7 @@ body[data-route="project-undder-magazine"] .portfolio-page{padding-top:0!importa
 .undder-slider-dot.active{background:#fff;}
 
 
-/* v40.1: caption spacing + last slider uncropped mixed-width images */
+
 .undder-slider[data-slider="specialone"] .undder-slide-card img{
   object-fit:contain;
   object-position:center center;
@@ -1679,7 +1755,7 @@ body[data-route="project-undder-magazine"] .portfolio-page{padding-top:0!importa
 }
 
 
-/* v44: UNDDER Magazine mobile layout from Figma node 361:173 */
+
 .undder-mobile-page{display:none;}
 .umob-cover,.umob-info,.umob-section,.umob-archive{position:absolute;}
 .umob-cover-img{position:absolute;left:0;top:0;width:390px;height:502px;object-fit:cover;object-position:center center;display:block;}
@@ -1717,13 +1793,13 @@ body[data-route="project-undder-magazine"] .portfolio-page{padding-top:0!importa
 }
 
 
-/* v45: hide dots on the first mobile slide */
+
 .umob-slider.first-active .umob-dots{
   display:none;
 }
 
 
-/* v46: Scale merch desktop from Figma node 383:106 */
+
 .scale-merch-page{background:#fff;padding:0!important;overflow:hidden;}
 .scale-merch-canvas{position:relative;width:100cqw;height:456.250000cqw;min-height:456.250000cqw;background:#fff;overflow:hidden;margin:0!important;padding:0!important;}
 .scale-merch-stage{position:absolute;left:0;top:0;width:1280px;height:5840px;background:#fff;transform-origin:top left;}
@@ -1763,7 +1839,7 @@ body[data-route="project-scale-merch"] .portfolio-page{padding-top:0!important;}
 }
 
 
-/* v47: Scale merch corrections — Figma guide spacing + non-distorting gallery */
+
 .scale-merch-canvas{background:#fff;}
 .scmerch-product-text h2{
   font-size:18px!important;
@@ -1793,7 +1869,7 @@ body[data-route="project-scale-merch"] .portfolio-page{padding-top:0!important;}
 .scmerch-thumb.active:after{border:1px solid #262626!important;}
 
 
-/* v48: fixed Scale merch text grid — no overlap with thumbnails */
+
 .scmerch-product-text{
   height:304px!important;
   overflow:visible!important;
@@ -1852,7 +1928,7 @@ body[data-route="project-scale-merch"] .portfolio-page{padding-top:0!important;}
   margin:0!important;
   padding:0!important;
 }
-/* make selected gallery photos open without distortion */
+
 .scmerch-main.contain-mode img{
   width:100%!important;
   height:100%!important;
@@ -1863,9 +1939,9 @@ body[data-route="project-scale-merch"] .portfolio-page{padding-top:0!important;}
 }
 
 
-/* v49: product blocks shifted down to restore Figma gap after intro text */
 
-/* v50: Scale merch desktop — photos from ZIP + tighter product block spacing */
+
+
 .scale-merch-page{background:#fff;padding:0!important;overflow:hidden;}
 .scale-merch-canvas{position:relative;width:100cqw;height:437.500000cqw;min-height:437.500000cqw;background:#fff;overflow:hidden;margin:0!important;padding:0!important;}
 .scale-merch-stage{position:absolute;left:0;top:0;width:1280px;height:5600px;background:#fff;transform-origin:top left;}
@@ -1904,7 +1980,7 @@ body[data-route="project-scale-merch"] .portfolio-page{padding-top:0!important;}
 }
 
 
-/* v54: Scale Clothes mobile rebuilt from Figma node 393:106 */
+
 .scale-clothes-mobile-page{display:none;}
 @media(max-width:720px){
   .scale-merch-page .scale-merch-canvas{display:none!important;}
@@ -1966,11 +2042,9 @@ body[data-route="project-scale-merch"] .portfolio-page{padding-top:0!important;}
 .scl-m-text li span{font-family:Inter,Arial,sans-serif;font-size:13.1px;font-weight:400;line-height:21.56px;letter-spacing:.28px;text-transform:none;}
 
 
-/* v55: Desktop editorial typography harmonized to OLYA Magazine.
-   Scope only the 1280px desktop stages. Product imagery, positioning,
-   swipe galleries, mobile layouts and other sections are untouched. */
+
 @media (min-width: 721px) {
-  /* Short Eye: restore the OLYA Magazine 17px paragraph rhythm. */
+  
   .sefx-stage .sefx-text {
     font-family: "Inter", Arial, sans-serif !important;
     font-weight: 400 !important;
@@ -1995,8 +2069,7 @@ body[data-route="project-scale-merch"] .portfolio-page{padding-top:0!important;}
   }
   .sefx-stage .sefx-text > h2 { margin-bottom: 17px !important; }
 
-  /* Scale Clock: identical body / lead typography to OLYA. Paragraphs
-     are positioned explicitly in the source layout; keep their positions. */
+  
   .sclock-stage .sclock-text {
     font-family: "Inter", Arial, sans-serif !important;
     font-weight: 400 !important;
@@ -2014,7 +2087,7 @@ body[data-route="project-scale-merch"] .portfolio-page{padding-top:0!important;}
     color: #373737 !important;
   }
 
-  /* UNDDER: remove spacer paragraphs used as line breaks. */
+  
   .undder-stage .undder-intro {
     color: #373737 !important;
     white-space: normal !important;
@@ -2046,8 +2119,7 @@ body[data-route="project-scale-merch"] .portfolio-page{padding-top:0!important;}
     margin-bottom: 0 !important;
   }
 
-  /* Scale Merch: remove two empty 43px spacer paragraphs. The three
-     real paragraphs use the same margins as OLYA Magazine, not double gaps. */
+  
   .scale-merch-stage .scmerch-intro {
     font-family: "Inter", Arial, sans-serif !important;
     font-weight: 400 !important;
@@ -2074,8 +2146,7 @@ body[data-route="project-scale-merch"] .portfolio-page{padding-top:0!important;}
   }
 }
 
-/* v56: Scale Merch desktop product composition matched to OLYA Merch.
-   Mobile markup, native swipes, OLYA and other projects are unchanged. */
+
 @media (min-width:721px) {
   .scale-merch-page .scale-merch-stage { height:5750px !important; }
   .scale-merch-page .scmerch-product-text {
@@ -2135,7 +2206,7 @@ body[data-route="project-scale-merch"] .portfolio-page{padding-top:0!important;}
   }
 }
 
-/* v57 poster page, directly aligned to Figma 408:106 and annotated 417:244 */
+
 .posters-page{padding:0!important;background:#fff;overflow:hidden!important;}
 .pst-canvas{position:relative;width:100cqw;height:801.40625cqw;min-height:801.40625cqw;background:#fff;overflow:hidden;}
 .pst-stage{position:absolute;top:0;left:0;width:1280px;height:10258px;transform-origin:top left;background:#fff;}
@@ -2167,7 +2238,7 @@ body[data-route="project-posters"] > .site-header{display:none!important;}
 body[data-route="project-posters"] .portfolio-page{padding-top:0!important;}
 
 
-/* v59: 390x10258 Figma mobile posters design node 414:106; specification 414:200 */
+
 .pst-mobile-canvas{display:none;}
 @media(max-width:720px){
   body[data-route="project-posters"] .posters-page{overflow:hidden!important;margin:0!important;padding:0!important;}
@@ -2204,7 +2275,7 @@ body[data-route="project-posters"] .portfolio-page{padding-top:0!important;}
 .pst-mobile-stage .pm-desc-paragraph{font:300 10px/10px Lato,Arial,sans-serif;margin:0;padding:0;white-space:normal;}
 
 
-/* NIX v79 desktop; local images embedded from nix.zip; based on original Figma layout 1280 x 10904 */
+
 .nix-figma-page{padding:0!important;margin:0!important;overflow:hidden!important;background:#fff;}
 .nix-canvas{position:relative;width:100cqw;height:851.875cqw;min-height:851.875cqw;background:#fff;overflow:hidden;margin:0!important;padding:0!important;}
 .nix-stage{position:absolute;left:0;top:0;width:1280px;height:10904px;transform-origin:top left;background:#fff;color:#373737;}
@@ -2235,7 +2306,7 @@ body[data-route="project-nix"] .portfolio-page{padding-top:0!important;padding-b
 @media(max-width:720px){.nix-figma-page .nix-canvas{display:none!important;}.nix-figma-page:after{content:"Мобильный макет NIX будет добавлен отдельно по Figma";display:block;font:400 13px/20px Inter,Arial,sans-serif;margin:140px 20px;}}
 
 
-/* NIX mobile v61 — coordinates from Figma 422:106 / 422:228 (390 x 9689). */
+
 .nix-mobile-canvas{display:none;}
 @media(max-width:720px){
   .nix-figma-page:after{content:none!important;display:none!important;}
@@ -2262,7 +2333,7 @@ body[data-route="project-nix"] .portfolio-page{padding-top:0!important;padding-b
 .nix-mobile-stage .nixm-logo-copy,.nix-mobile-stage .nixm-type-one,.nix-mobile-stage .nixm-type-two{overflow:visible;}
 
 
-/* UPNIGHT v83 — local images from FESF.zip; geometry preserved from desktop/mobile Figma layout */
+
 .upn-page{padding:0!important;margin:0!important;overflow:hidden!important;background:#fff!important;min-height:0!important;}
 .upn-canvas{position:relative;width:100cqw;height:520.15625cqw;min-height:520.15625cqw;overflow:hidden;background:#fff;margin:0!important;padding:0!important;}
 .upn-stage{position:absolute;left:0;top:0;width:1280px;height:6658px;transform-origin:top left;background:#fff;color:#070707;}
@@ -2304,7 +2375,7 @@ body[data-route="project-upnight"] .portfolio-page{padding-top:0!important;paddi
 }
 
 
-/* DUVET v81 — local unaltered ZIP assets, Figma slots 425:623 desktop, 425:543 mobile */
+
 .duv-page{padding:0!important;margin:0!important;overflow:hidden!important;background:#fff!important;min-height:0!important;}
 .duv-canvas{position:relative;width:100cqw;height:401.640625cqw;min-height:401.640625cqw;overflow:hidden;background:#fff;margin:0!important;padding:0!important;}
 .duv-stage{position:absolute;left:0;top:0;width:1280px;height:5141px;transform-origin:top left;background:#fff;color:#262626;}
@@ -2346,7 +2417,7 @@ body[data-route="project-duvet"] .portfolio-page{padding-top:0!important;padding
 
 
 
-/* v65 — mobile OLYA Magazine, faithful to Figma nodes 432:106 / 432:226. */
+
 @media (max-width:720px) {
   body[data-route="project-olya-magazine"] .site-header {display:none!important;}
   body[data-route="project-olya-magazine"] .site-footer {display:none!important;}
@@ -2397,7 +2468,7 @@ body[data-route="project-duvet"] .portfolio-page{padding-top:0!important;padding
   .olya-mobile-v65 .omv-mobile-dots {position:absolute;left:50%;bottom:25px;transform:translateX(-50%);display:flex;gap:10px;align-items:center;justify-content:center;z-index:5;}
   .olya-mobile-v65 .omv-mobile-dots button {width:6px;height:6px;padding:0;border:0;border-radius:50%;background:#737373;cursor:pointer;}
   .olya-mobile-v65 .omv-mobile-dots button.active {background:#ffffff;}
-  /* Original supplied photographs are shown complete, without cropping. */
+  
   .olya-mobile-v65 figure.omv-uncropped img {
     left:0!important;top:0!important;width:100%!important;height:100%!important;
     object-fit:contain!important;object-position:center center!important;
@@ -2412,19 +2483,18 @@ body[data-route="project-duvet"] .portfolio-page{padding-top:0!important;padding
 }
 
 
-/* v73 — Embed accepted Scale Clock v72; preserve all other routes. */
+
 .scale-clock-merged-page{padding:0!important;margin:0!important;background:#fff!important;overflow:hidden!important;min-height:0!important;height:auto!important;}
 .scale-clock-frame{display:block;border:0;margin:0;padding:0;width:100cqw;max-width:none;height:458.90625cqw;background:#fff;overflow:hidden;}
 @media(max-width:767px){.scale-clock-frame{height:1445.897436cqw;}}
 body[data-route="project-scale-clock"] .site-footer{display:none!important;}
 
-/* v92: new four captions on Short Eye desktop and mobile only. */
+
 .sefx-stage-v34 .sefx-v92-caption{font-family:Lato,Arial,sans-serif;font-size:10px;line-height:10px;letter-spacing:0;font-weight:300;color:#000;margin:0;}
 .semob-stage .semob-v92-caption{font-family:Lato,Arial,sans-serif;font-size:10px;line-height:10px;letter-spacing:0;font-weight:300;color:#000;margin:0;}
 
 
-/* v109 — one fixed global Figma header across every project and route.
-   Figma nodes 200:708 (1280 x 63) and 200:1229 (390 x 54). */
+
 html body[data-route] > header.site-header,
 html body > header.site-header{
   display:block !important;
@@ -2558,7 +2628,7 @@ html body > header.site-header > button.mobile-menu{display:none !important}
 </style>
 <style id="short-eye-brandbook-slider-v74">
 
-/* v75 — Short Eye brandbook sliders and web-design image update. Geometry follows the existing OLYA black-frame galleries. */
+
 .se-book-desktop{position:absolute;overflow:hidden;background:#000;isolation:isolate;outline:none;}
 .se-book-desktop-track{position:absolute;left:50%;top:128px;width:1070px;height:372px;transform:translateX(-50%);z-index:1;overflow:hidden;}
 .se-book-spread{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:20px;opacity:0;visibility:hidden;transition:opacity .32s ease,visibility .32s;}
@@ -2586,7 +2656,7 @@ html body > header.site-header > button.mobile-menu{display:none !important}
 </style>
 <!-- v78 poster fixes: map images to Figma poster nodes; keep pre-cropped cover at 1:1 frame ratio -->
 <style id="v78-posters-corrections">
-/* Source cover already contains the intended 439:566 crop. */
+
 .pst-cover-photo img {
   left:0!important; top:0!important; width:100%!important; height:100%!important;
   object-fit:contain!important; object-position:center!important;
@@ -2595,22 +2665,21 @@ html body > header.site-header > button.mobile-menu{display:none !important}
   left:0!important; top:0!important; width:100%!important; height:100%!important;
   object-fit:contain!important; object-position:center!important;
 }
-/* Project-grid preview should never stretch an already-cropped portrait image. */
+
 .crop-07 .work-image img {
   left:0!important; top:0!important; width:100%!important; height:100%!important;
   object-fit:cover!important; object-position:center!important;
 }
 </style>
 <style>
-/* v89: Desktop Scale Merch geometry, Figma 493:106 at 1280x5153.
-   Mobile version is deliberately unchanged; images remain embedded local assets. */
+
 @media(min-width:721px){
  .scale-merch-page .scale-merch-stage{height:5153px!important;}
  .scale-merch-page .scale-merch-canvas{height:402.578125cqw!important;min-height:402.578125cqw!important;}
  .scale-merch-page .scmerch-product-text{height:auto!important;}
 }
 </style><style>
-/* v89 image framing: Figma 493:131/133/137/140/143 uses smaller products in white 486×620 frames. */
+
 @media(min-width:721px){
  .scale-merch-page .scmerch-product .scmerch-main[data-photo-index="0"] img,
  .scale-merch-page .scmerch-product .scmerch-main[data-photo-index="1"] img{
@@ -2623,8 +2692,7 @@ html body > header.site-header > button.mobile-menu{display:none !important}
 }
 </style>
 <style id="scale-merch-typography-match-olya-v90">
-/* SCALE Merch desktop only: exact product typography of OLYA Merch.
-   Keep the existing 1280x5153 grid, image positions, galleries and mobile layout. */
+
 @media (min-width:721px) {
   .scale-merch-page .scmerch-product-text {
     font-family: Inter, Arial, sans-serif !important;
@@ -2703,8 +2771,7 @@ html body > header.site-header > button.mobile-menu{display:none !important}
 </style>
 
 <style id="scale-merch-mobile-match-olya-v91">
-/* Mobile SCALE Merch product copy: match OLYA Merch mobile typography.
-   Use semantic paragraphs/margins instead of invisible blank paragraphs. */
+
 @media (max-width:720px) {
   .scale-clothes-mobile-page .scl-m-text {
     left:21px !important;
@@ -2784,7 +2851,7 @@ html body > header.site-header > button.mobile-menu{display:none !important}
 @media (max-width:720px){.umob-slider{overscroll-behavior-x:contain}.umob-slider .umob-track{position:relative!important;left:0!important;box-sizing:content-box!important}.umob-slider .umob-card{scroll-snap-align:center!important;scroll-snap-stop:always!important}}
 </style>
 <style>
-/* Short Eye / v101: in-project video player and moving project covers */
+
 .se-video-player-wrap{background:#000!important}
 .se-video-player{display:block;width:100%;height:100%;object-fit:contain;background:#000;position:absolute;inset:0}
 .se-video-preview-wrap{background:#000!important}
@@ -2798,14 +2865,14 @@ html body > header.site-header > button.mobile-menu{display:none !important}
 }
 </style>
 <style id="undder-mobile-hide-dots-v104">
-/* Hide only UNDDER Magazine mobile carousel pagination dots; retain slider state/behavior. */
+
 .undder-mobile-page .umob-dots{display:none!important;}
 </style>
 
 <style id="portfolio-ui-polish-v107">
-/* The OLYA iframe participates in the parent page's scrolling, never independently. */
+
 .merch-html-frame { overflow:hidden !important; border:0 !important; }
-/* Spacer lines are intentional whitespace, not grey-filled decorative rectangles. */
+
 .scale-clothes-mobile-page .intro-line.blank,
 .scale-merch-page .intro-line.blank,
 .scale-merch-mobile-stage .intro-line.blank {
@@ -2813,7 +2880,7 @@ html body > header.site-header > button.mobile-menu{display:none !important}
     background-color:transparent !important;
     box-shadow:none !important;
 }
-/* Short Eye: eliminate the black letterbox stripe over the advertisement player. */
+
 @media (min-width:721px) {
   .sefx-stage .se-video-player-wrap { background:#fff !important; }
   .sefx-stage .se-video-player-wrap > video.se-video-player {
@@ -2826,7 +2893,7 @@ html body > header.site-header > button.mobile-menu{display:none !important}
 </style>
 
 <style id="mobile-project-details-v108">
-/* Only the mobile project landing grid. Desktop layout and per-project pages remain unchanged. */
+
 .work-detail-row{display:none}
 @media (max-width:720px){
   .projects-page .work-grid{
@@ -2838,7 +2905,7 @@ html body > header.site-header > button.mobile-menu{display:none !important}
   .projects-page .work-card{width:100%;min-width:0;aspect-ratio:320/413}
   .projects-page .work-card .work-image{transition:none!important}
   .projects-page .work-card:hover .work-image{transform:none!important;filter:none!important}
-  /* Card metadata moves into the expanding detail panel on mobile. */
+  
   .projects-page .work-card .work-title,.projects-page .work-card .work-meta{opacity:0!important;visibility:hidden!important}
   .projects-page .work-detail-row{
     grid-column:1/-1;
@@ -2878,8 +2945,7 @@ html body > header.site-header > button.mobile-menu{display:none !important}
 </style>
 
 <style id="v111-mobile-header-white-gradient-59px">
-/* Only mobile project detail routes receive the fading blur. The main works
-   grid and the gallery retain the solid white header from v109. */
+
 @media (max-width:720px) {
   html body[data-route] > header.site-header,
   html body > header.site-header {
@@ -2904,7 +2970,7 @@ html body > header.site-header > button.mobile-menu{display:none !important}
     overflow:visible !important;
     isolation:isolate;
   }
-  /* White at the top, clear at the bottom. No blur of images underneath. */
+  
   html body[data-route^="project-"]:not(.global-nav-is-open) > header.site-header::before {
     content:"";
     display:block;
@@ -2927,7 +2993,7 @@ html body > header.site-header > button.mobile-menu{display:none !important}
   html body[data-route^="project-"]:not(.global-nav-is-open) > header.site-header > button.mobile-menu {
     z-index:2 !important;
   }
-  /* The opened menu remains a single white surface across header + panel. */
+  
   html body.global-nav-is-open[data-route^="project-"] > header.site-header {
     background:#fff !important;
     isolation:auto;
@@ -2935,7 +3001,7 @@ html body > header.site-header > button.mobile-menu{display:none !important}
   html body.global-nav-is-open[data-route^="project-"] > header.site-header::before {
     content:none !important;
   }
-  /* Center navigation labels in both axes, not against the left gutter. */
+  
   html body > .global-mobile-nav-panel .global-mobile-nav-list {
     box-sizing:border-box;
     width:100%;
@@ -2952,7 +3018,7 @@ html body > header.site-header > button.mobile-menu{display:none !important}
   html body > .global-mobile-nav-panel .global-mobile-nav-list > button {
     text-align:center;
   }
-  /* Slightly stronger 2px strokes, preserving the same 18px icon geometry. */
+  
   html body > header.site-header .mobile-menu-bars::before,
   html body > header.site-header .mobile-menu-bars::after {
     height:2px !important;
@@ -2962,9 +3028,7 @@ html body > header.site-header > button.mobile-menu{display:none !important}
 </style>
 
 <style id="v112-content-flush-and-single-navigation">
-/* The global fixed header owns the top 63px/59px of every route.
-   Keep listing pages below the solid header; let project artwork run underneath
-   the translucent mobile detail header, with no vestigial 150/84px padding. */
+
 html body:not([data-route^="project-"]) > main.portfolio-page {
   padding-top:63px !important;
 }
@@ -2976,9 +3040,7 @@ html body > main.portfolio-page > .route-page.contacts-page,
 html body > main.portfolio-page > .route-page.project-detail-page {
   padding-top:0 !important;
 }
-/* No duplicated Figma mockup header/nav: the actual fixed header is the
-   only visible menu. Hide old text, icons and backgrounds without moving
-   the artworks inside the scaled reference stages. */
+
 html body .short-eye-figma-page .sefx-header-bg,
 html body .short-eye-figma-page .sefx-nav,
 html body .short-eye-figma-page .sefx-brand,
@@ -3037,12 +3099,12 @@ html body .olya-page .omv-search {
 </style>
 
 <style id="project-covers-v113">
-/* Original prepared artwork: no legacy % zoom/crop. Poster project is unchanged. */
+
 .projects-page .work-grid{column-gap:0!important;row-gap:0!important;grid-template-columns:repeat(4,minmax(0,1fr));}
 .projects-page .work-card>.work-button>.work-image{width:calc(100% + 1.5px)!important;height:calc(100% + 1.5px)!important;right:-1.5px;bottom:-1.5px;}
 .projects-page .work-image>img[data-project-cover-v113],
 .projects-page .work-card.crop-03 .work-image>video{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:none!important;object-fit:cover!important;object-position:center center!important;}
-/* Only the lead cover of each work is affected; product gallery crops stay the same. */
+
 .olya-canvas figure.od-hero>img,
 .olya-mobile-canvas figure.omv-image:first-child>img,
 .undder-stage>.undder-imgbox[style*="left:421px"][style*="top:162px"]>img,
@@ -3064,8 +3126,7 @@ html body .olya-page .omv-search {
 </style>
 
 <style id="unified-figma-footer-v114">
-/* Figma: 537:112 desktop 1280×140; 200:1222 mobile 390×186.
-   The footer follows the active route in document flow; no absolute positioning. */
+
 html body > main.portfolio-page {
   min-height:0 !important;
   padding-bottom:0 !important;
@@ -3134,7 +3195,7 @@ html body > main.portfolio-page > footer.site-footer > nav.footer-links > * {
 }
 html body > main.portfolio-page > footer.site-footer a:focus-visible,
 html body > main.portfolio-page > footer.site-footer button:focus-visible {outline:1px solid #262626;outline-offset:5px;}
-/* Contacts route delegates the displayed contact links to the unified footer. */
+
 html body > main.portfolio-page > section.contacts-page {
   height:0 !important;
   min-height:0 !important;
@@ -3170,7 +3231,7 @@ html body > main.portfolio-page > section.contacts-page > .contacts-content{disp
   }
 }
 
-/* Legacy mockup footers are superseded by the single accessible page footer. */
+
 html body .olya-desktop-v13 .od-footer,
 html body .short-eye-figma-page .sefx-footer,
 html body .short-eye-figma-page .semob-footer-nav,
@@ -3178,7 +3239,7 @@ html body .nix-figma-page .nix-contacts {display:none !important;}
 </style>
 
 <style id="ct-contacts-figma-v118">
-/* Portfolio contacts 177:1257 / 260:468: only the contacts route. */
+
 html body>main.portfolio-page>section.contacts-page {
   display:none!important; width:100%!important; height:auto!important; min-height:0!important;
   padding:0!important; margin:0!important; overflow:visible!important; background:#fff!important;
@@ -3223,11 +3284,7 @@ html body>main.portfolio-page>section.contacts-page .ct-mobile{display:none}
 </style>
 
 <style id="v123-desktop-footer-cleanup">
-/* The universal footer is in normal document flow. Some old project routes,
-   notably SHORT EYE, still give the outer main a full-artboard min-height;
-   when the content-fit routine moves the footer up, that obsolete min-height
-   leaves an empty scrollable tail AFTER the footer. Keep the last visible
-   artwork and footer untouched, and let the parent end at its true content. */
+
 @media (min-width:721px) {
   html body[data-route^="project-"] > main.portfolio-page {
     min-height: 0 !important;
@@ -3236,11 +3293,7 @@ html body>main.portfolio-page>section.contacts-page .ct-mobile{display:none}
 </style>
 
 <style id="v124-single-scroll-and-footer">
-/* On desktop, overflow-x:hidden made BODY vertically scrollable as well.
-   Some oversized Figma layers then produced a second scrollbar and a white
-   scrollable tail after the shared footer.  clip avoids creating a second
-   scroll container; clipping main prevents hidden artboard overspill from
-   changing the root document's scroll height. */
+
 @media (min-width:721px) {
   html body[data-route^="project-"]:not(.global-nav-is-open) {
     overflow-x:clip!important;
@@ -3250,8 +3303,7 @@ html body>main.portfolio-page>section.contacts-page .ct-mobile{display:none}
     overflow:clip!important;
   }
 }
-/* Match the six specific mobile project layouts without touching their
-   sliders or page positions. Keep the existing modal navigation scroll lock. */
+
 @media (max-width:720px) {
   html body[data-route="project-olya-magazine"]:not(.global-nav-is-open),
   html body[data-route="project-short-eye"]:not(.global-nav-is-open),
@@ -3274,7 +3326,7 @@ html body>main.portfolio-page>section.contacts-page .ct-mobile{display:none}
 </style>
 
 <style id="portfolio-v128-supreme-contacts-smoothing">
-/* Original 390x511 gallery. Fresh source photographs, fitted whole without cropping. */
+
 @media (max-width:720px) {
   .scale-clothes-mobile-stage .scl-m-product[data-product="supreme"] .scl-m-slide img {
     width:100% !important; height:100% !important;
@@ -3282,13 +3334,13 @@ html body>main.portfolio-page>section.contacts-page .ct-mobile{display:none}
     object-fit:contain !important; object-position:center center !important;
   }
 }
-/* Native snap and JS smooth scroll fought each other. JS owns settling now. */
+
 .contacts-page .ct-slider-scroll {scroll-snap-type:none!important;scroll-behavior:auto!important;}
 .contacts-page .ct-slide {scroll-snap-align:none!important;}
 .contacts-page .ct-slider-scroll.is-dragging {scroll-behavior:auto!important;}
 </style>
 <style id="pf-smooth-route-v130">
-/* Keep header and shared footer unchanged; fade only the routed content. */
+
 body > main.portfolio-page > .route-page.active {
   opacity: 1;
   transition: opacity 240ms cubic-bezier(.4,0,.2,1);
@@ -3303,7 +3355,7 @@ body.pf-route-leaving > main.portfolio-page > .route-page.active {
 </style>
 
 <style id="portfolio-project-navigation-v133">
-/* Only previous and next work, in the original project-grid order. */
+
 html body > main.portfolio-page > nav.portfolio-project-nav { display:none !important; }
 html body[data-route^="project-"] > main.portfolio-page > nav.portfolio-project-nav {
   display:grid !important; grid-template-columns:minmax(0,1fr) minmax(0,1fr);
@@ -3351,7 +3403,7 @@ html body > main.portfolio-page > nav.portfolio-project-nav .project-nav-short {
 }
 </style>
 <style id="portfolio-bilingual-nav-v137">
-  /* Language switch follows the same restrained typography as the site header. */
+  
   @media (min-width:721px) {
     html body > header.site-header > button.lang {
       display:block !important;position:absolute !important;
@@ -3363,14 +3415,14 @@ html body > main.portfolio-page > nav.portfolio-project-nav .project-nav-short {
       color:#262626 !important;background:transparent !important;z-index:101 !important;
     }
   }
-  /* Keep the existing two-project navigation, with translated direction labels. */
+  
   body.lang-en > main.portfolio-page > nav.portfolio-project-nav > button.is-project-prev::before {
     content:"PREVIOUS PROJECT" !important;
   }
   body.lang-en > main.portfolio-page > nav.portfolio-project-nav > button.is-project-next::before {
     content:"NEXT PROJECT" !important;
   }
-  /* Original mobile navigation styling applies to the new language row. */
+  
   @media (max-width:720px) {
     .global-mobile-nav-list .mobile-language-toggle {text-transform:uppercase;}
   }
@@ -3401,14 +3453,14 @@ html body > main.portfolio-page > nav.portfolio-project-nav .project-nav-short {
 <article class="work-card crop-01" data-project="1">
 <button aria-label="ОЛЯ, ЖУРНАЛ ОБ ИСКУССТВЕ, КУЛЬТУРЕ И СТИЛЕ" class="work-button" data-route="project-olya-magazine" type="button">
 <div class="work-title">ОЛЯ, ЖУРНАЛ ОБ ИСКУССТВЕ, КУЛЬТУРЕ И СТИЛЕ</div>
-<div class="work-image"><img alt="ОЛЯ, ЖУРНАЛ ОБ ИСКУССТВЕ, КУЛЬТУРЕ И СТИЛЕ" data-project-cover-v113="olya_mag" data-embedded-asset="assets/project_cover_olya_mag_v113.jpg" loading="eager" fetchpriority="high" decoding="async"/></div>
+<div class="work-image"><img alt="ОЛЯ, ЖУРНАЛ ОБ ИСКУССТВЕ, КУЛЬТУРЕ И СТИЛЕ" data-project-cover-v113="olya_mag" data-embedded-asset="assets/project_cover_olya_mag_v113.jpg" src="/assets/project_cover_olya_mag_v113.jpg" loading="eager" fetchpriority="high" decoding="async"/></div>
 <div class="work-meta">ДИЗАЙН ПОЛИГРАФИИ, ТВОРЧЕСКОЕ РУКОВОДСТВО</div>
 </button>
 </article>
 <article class="work-card crop-02" data-project="2">
 <button aria-label="ОЛЯ, КОЛЛЕКЦИЯ БАЗОВОЙ ОДЕЖДЫ" class="work-button" data-route="project-olya-clothes" type="button">
 <div class="work-title">ОЛЯ, КОЛЛЕКЦИЯ БАЗОВОЙ ОДЕЖДЫ</div>
-<div class="work-image"><img alt="ОЛЯ, КОЛЛЕКЦИЯ БАЗОВОЙ ОДЕЖДЫ" data-project-cover-v113="olya_merch" data-embedded-asset="assets/project_cover_olya_merch_v113.jpg" loading="eager" fetchpriority="high" decoding="async"/></div>
+<div class="work-image"><img alt="ОЛЯ, КОЛЛЕКЦИЯ БАЗОВОЙ ОДЕЖДЫ" data-project-cover-v113="olya_merch" data-embedded-asset="assets/project_cover_olya_merch_v113.jpg" src="/assets/project_cover_olya_merch_v113.jpg" loading="eager" fetchpriority="auto" decoding="async"/></div>
 <div class="work-meta">АЙДЕНТИКА БРЕНДА, РАЗРАБОТКА ГРАФИКИ, ТВОРЧЕСКОЕ РУКОВОДСТВО</div>
 </button>
 </article>
@@ -7061,7 +7113,7 @@ window.addEventListener('message',function(event){
 </script>
 
 <style id="pf-photo-reveal-v117">
-/* v117 — scroll-enter fade only for static photographs (not gallery slides). */
+
 img.pf-photo-reveal-v117 {
   transition: opacity 760ms cubic-bezier(0.22, 1, 0.36, 1) !important;
 }
@@ -7071,7 +7123,7 @@ img.pf-photo-reveal-v117:not(.pf-photo-shown-v117) {
 @media (prefers-reduced-motion: reduce) {
   img.pf-photo-reveal-v117 { transition: none !important; opacity: 1 !important; }
 }
-/* Mobile: image visibility must not depend on a scroll observer firing. */
+
 @media (max-width: 720px) {
   img.pf-photo-reveal-v117,
   img.pf-photo-reveal-v117:not(.pf-photo-shown-v117) { opacity: 1 !important; transition: none !important; }
@@ -7287,20 +7339,16 @@ img.pf-photo-reveal-v117:not(.pf-photo-shown-v117) {
 </script>
 
 <style id="ct-contacts-responsive-fix-v119">
-/* v119: scale the 1280/390 Figma stages using a numeric JS coefficient.
-   CSS scale(calc(100cqw / 1280)) computes to `none` in Chromium because
-   dividing a CSS length by a unitless number remains a length; scale() needs a number. */
+
 html body[data-route="contacts"] > main.portfolio-page {
   padding-top:0!important;
 }
-/* The fixed global header already occupies the top of the viewport. The
-   contact artboards contain their own heading clearance. */
+
 @media (max-width:720px) {
   html body>main.portfolio-page>section.contacts-page .ct-mobile {
     height:calc(2940 * 100cqw / 390)!important;
   }
-  /* Retain Figma content and labels up to y2912 while trimming the 191px
-     unused bottom area to 28px before the existing footer. */
+  
 }
 </style>
 <script id="ct-contacts-stage-scale-v119">
@@ -7359,28 +7407,26 @@ html body[data-route="contacts"] > main.portfolio-page {
 </script>
 
 <style id="portfolio-gap-fixes-v121">
-/* v121: trim only unused white pixels at the ends of three MOBILE Figma artboards.
-   All images/text retain their original Figma positions and original dimensions. */
+
 @media(max-width:720px){
-  /* OLYA Merch embedded document: original 7788 high, last content ends at 7332. */
+  
   html body[data-route="project-olya-clothes"] > main.portfolio-page > section.merch-page-embedded,
   html body[data-route="project-olya-clothes"] > main.portfolio-page > section.merch-page-embedded > iframe.merch-html-frame {
     height:calc(7390 * 100cqw / 390) !important;
     min-height:0 !important;
     max-height:none !important;
   }
-  /* POSTERS: the final paragraph ends at approx. y=9922 of the 10258px artboard. */
+  
   html body[data-route="project-posters"] .pst-mobile-canvas {
     height:calc(9942 * 100cqw / 390) !important;
     min-height:0 !important;
   }
-  /* DUVET: the last photograph ends at y=5407 of the old 5703px artboard. */
+  
   html body[data-route="project-duvet"] .duv-mobile-canvas {
     height:calc(5407 * 100cqw / 390) !important;
     min-height:0 !important;
   }
-  /* CONTACTS: original top bio baseline is y134; shift all content up by 70
-     design pixels without changing font sizes or individual gaps. Keep 28px below the last caption. */
+  
   html body[data-route="contacts"] > main.portfolio-page > section.contacts-page .ct-mobile {
     height:calc(2870 * 100cqw / 390) !important;
     min-height:0 !important;
@@ -7388,7 +7434,7 @@ html body[data-route="contacts"] > main.portfolio-page {
   html body[data-route="contacts"] > main.portfolio-page > section.contacts-page .ct-mobile > .ct-stage {
     top:calc(-70 * 100cqw / 390) !important;
   }
-  /* SHORT EYE: remove the fine black letterbox stripe above the video. */
+  
   html body[data-route="project-short-eye"] .semob-stage .semob-img.se-video-player-wrap {
     background:transparent !important;
     border-top:0 !important;
@@ -7407,14 +7453,13 @@ html body[data-route="contacts"] > main.portfolio-page {
 </style>
 
 <style id="v122-olya-footer-and-project-link">
-/* Only on the mobile OLYA Merch route: remove the obsolete min-height of the
-   outer portfolio container, which otherwise extends below the shared footer. */
+
 @media (max-width:720px) {
   html body[data-route="project-olya-clothes"] > main.portfolio-page {
     min-height: 0 !important;
     height: auto !important;
   }
-  /* Figma node 561:77: "перейти", Lato Light 10px, underlined, #262626. */
+  
   html body .projects-page .work-detail-arrow {
     display:block;
     width:40px;
@@ -7437,8 +7482,7 @@ html body[data-route="contacts"] > main.portfolio-page {
 </style>
 
 <style id="portfolio-gallery-v125">
-/* Gallery — image natural aspect ratio, 100% column width, aligned to the bottom of its row.
-   A row's height can grow to fit tall images, while wide photos leave intentional top whitespace. */
+
 .gallery-page .gallery-grid {
   display:grid; grid-template-columns:repeat(4,minmax(0,1fr));
   align-items:stretch; gap:0; width:100%; overflow:hidden;
@@ -7462,7 +7506,7 @@ html body[data-route="contacts"] > main.portfolio-page {
     width:100%; min-height:calc(100vw * 413 / 320);
   }
 }
-/* The class is enabled only after JavaScript starts observing the new gallery route. */
+
 .gallery-page.gallery-reveal-v125 .gallery-item img {
   opacity:0; transition:opacity 850ms cubic-bezier(.22,1,.36,1);
 }
