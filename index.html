@@ -3347,6 +3347,19 @@ html body > main.portfolio-page > nav.portfolio-project-nav .project-nav-short {
   html body > main.portfolio-page > nav.portfolio-project-nav .project-nav-short { display:inline; }
 }
 </style>
+<style id="portfolio-bilingual-nav-v136">
+  /* Keep the existing two-project navigation, with translated direction labels. */
+  body.lang-en > main.portfolio-page > nav.portfolio-project-nav > button.is-project-prev::before {
+    content:"PREVIOUS PROJECT" !important;
+  }
+  body.lang-en > main.portfolio-page > nav.portfolio-project-nav > button.is-project-next::before {
+    content:"NEXT PROJECT" !important;
+  }
+  /* Original mobile navigation styling applies to the new language row. */
+  @media (max-width:720px) {
+    .global-mobile-nav-list .mobile-language-toggle {text-transform:uppercase;}
+  }
+</style>
 </head>
 <body>
 <header class="site-header" role="banner" data-global-fixed-header="v109">
@@ -3364,6 +3377,7 @@ html body > main.portfolio-page > nav.portfolio-project-nav .project-nav-short {
 <button type="button" data-route="projects">Проекты</button>
 <button type="button" data-route="gallery">Галерея</button>
 <button type="button" data-route="contacts">Контакты</button>
+<button type="button" data-i18n-toggle="true" class="mobile-language-toggle" aria-label="Switch to English">RU</button>
 </div>
 </nav>
 <main class="portfolio-page">
@@ -7511,5 +7525,7 @@ html body[data-route="contacts"] > main.portfolio-page {
 })();
 </script>
 
-<style id="olya-pdf-v131-style">.olya-mobile-v65 .omv-spread-pg a.olya-pdf-download{display:grid;place-items:center;width:100%;height:100%;font:700 11px/1.2 'Lato',Arial,sans-serif;color:#000;text-align:center;text-decoration:none;cursor:pointer}.olya-mobile-v65 .omv-spread-pg a.olya-pdf-download:hover{text-decoration:underline}</style></body>
+<style id="olya-pdf-v131-style">.olya-mobile-v65 .omv-spread-pg a.olya-pdf-download{display:grid;place-items:center;width:100%;height:100%;font:700 11px/1.2 'Lato',Arial,sans-serif;color:#000;text-align:center;text-decoration:none;cursor:pointer}.olya-mobile-v65 .omv-spread-pg a.olya-pdf-download:hover{text-decoration:underline}</style><script src="./portfolio-en-translations.js"></script>
+<script src="./portfolio-i18n.js"></script>
+</body>
 </html>
