@@ -8,9 +8,9 @@
   const boundSwitches=new WeakSet();
   const clean=s=>(s||'').replace(/\u00a0/g,' ').replace(/\s+/g,' ').trim();
   const cyr=/[а-яё]/i;
-  const baseTitle='IVANOV NIKITA.';
+  const baseTitle='IVANOV NIKITA';
   const RussianRoutes={
-    projects:'IVANOV NIKITA.',
+    projects:'IVANOV NIKITA',
     gallery:'Галерея',contacts:'Контакты',
     'project-olya-magazine':'ОЛЯ magazine','project-olya-clothes':'ОЛЯ — мерч',
     'project-short-eye':'Short Eye','project-scale-clock':'Scale Clock',
@@ -160,7 +160,7 @@
       const title=route==='projects'?baseTitle:(EnglishRoutes[route]||'Project')+' — IVANOV NIKITA';
       if(document.title!==title)document.title=title;
     }else{
-      const title=route==='projects'?'IVANOV NIKITA.':
+      const title=route==='projects'?'IVANOV NIKITA':
         (RussianRoutes[route]||'Проект')+' — IVANOV NIKITA';
       if(document.title!==title)document.title=title;
     }
