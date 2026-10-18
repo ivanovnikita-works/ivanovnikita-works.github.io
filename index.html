@@ -3665,7 +3665,56 @@ html body > main.portfolio-page > nav.portfolio-project-nav .project-nav-short {
 <iframe scrolling="no" class="merch-html-frame" loading="lazy" srcdoc="&lt;!DOCTYPE html&gt;
 
 &lt;html lang=&quot;ru&quot;&gt;
-&lt;head&gt;&lt;script&gt;(function(){&quot;use strict&quot;;window.__asset=function(path){return parent.__asset(path);};function mount(){document.querySelectorAll(&quot;img[data-embedded-asset]&quot;).forEach(function(im){im.src=window.__asset(im.getAttribute(&quot;data-embedded-asset&quot;));});}if(document.readyState===&#x27;loading&#x27;){document.addEventListener(&#x27;DOMContentLoaded&#x27;,mount,{once:true});}else mount();})();&lt;/script&gt;
+&lt;head&gt;&lt;script id=&quot;embedded-progressive-images-v138&quot;&gt;
+(function(){
+  &quot;use strict&quot;;
+  window.__asset=function(path){return parent.__asset(path);};
+  var timer=0;
+  function check(){
+    var frame=window.frameElement;
+    if (!frame) return;
+    var outer=frame.getBoundingClientRect();
+    var pw=parent.innerWidth||document.documentElement.clientWidth;
+    var ph=parent.innerHeight||document.documentElement.clientHeight;
+    if (!outer.width || outer.bottom &lt; -800 || outer.top &gt; ph+800) return;
+    var insideWidth=document.documentElement.clientWidth||window.innerWidth||outer.width;
+    var factor=outer.width/insideWidth;
+    document.querySelectorAll(&#x27;img[data-embedded-asset]:not([src])&#x27;).forEach(function(img){
+      var r=img.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      var top=outer.top+r.top*factor, bottom=outer.top+r.bottom*factor;
+      var left=outer.left+r.left*factor, right=outer.left+r.right*factor;
+      if (bottom &lt; -650 || top &gt; ph+650 || right &lt; -650 || left &gt; pw+650) return;
+      img.loading=&#x27;eager&#x27;;
+      img.decoding=&#x27;async&#x27;;
+      img.src=window.__asset(img.getAttribute(&#x27;data-embedded-asset&#x27;));
+    });
+  }
+  function schedule(){
+    if (timer) return;
+    timer=setTimeout(function(){timer=0;check();},120);
+  }
+  function start(){
+    check();
+    try{
+      parent.addEventListener(&#x27;scroll&#x27;,schedule,{passive:true});
+      parent.addEventListener(&#x27;resize&#x27;,schedule,{passive:true});
+      parent.addEventListener(&#x27;touchend&#x27;,schedule,{passive:true});
+      var route=window.frameElement &amp;&amp; window.frameElement.closest(&#x27;section.route-page&#x27;);
+      if (route) new MutationObserver(schedule).observe(route,{attributes:true,attributeFilter:[&#x27;class&#x27;]});
+    }catch(e){}
+    window.addEventListener(&#x27;resize&#x27;,schedule,{passive:true});
+    window.addEventListener(&#x27;load&#x27;,schedule,{passive:true});
+    document.addEventListener(&#x27;touchend&#x27;,schedule,{passive:true});
+    // Gallery tracks change transform/classes without scrolling the main page.
+    new MutationObserver(schedule).observe(document.body,{attributes:true,attributeFilter:[&#x27;class&#x27;,&#x27;style&#x27;],childList:true,subtree:true});
+    setTimeout(check,450);
+    setTimeout(check,1600);
+  }
+  if(document.readyState===&#x27;loading&#x27;) document.addEventListener(&#x27;DOMContentLoaded&#x27;,start,{once:true});
+  else start();
+})();
+&lt;/script&gt;
 &lt;meta charset=&quot;utf-8&quot;/&gt;
 &lt;meta content=&quot;width=device-width, initial-scale=1&quot; name=&quot;viewport&quot;/&gt;
 &lt;title&gt;OLYA merch — Ivanov Nikita&lt;/title&gt;
@@ -4830,7 +4879,56 @@ body{overflow-x:hidden;overflow-y:hidden}
 </div></section>
 <section class="route-page scale-clock-merged-page" data-route-page="project-scale-clock"><iframe scrolling="no" class="scale-clock-frame" loading="lazy" srcdoc="&lt;!DOCTYPE html&gt;
 
-&lt;html lang=&quot;ru&quot;&gt;&lt;head&gt;&lt;script&gt;(function(){&quot;use strict&quot;;window.__asset=function(path){return parent.__asset(path);};function mount(){document.querySelectorAll(&quot;img[data-embedded-asset]&quot;).forEach(function(im){im.src=window.__asset(im.getAttribute(&quot;data-embedded-asset&quot;));});}if(document.readyState===&#x27;loading&#x27;){document.addEventListener(&#x27;DOMContentLoaded&#x27;,mount,{once:true});}else mount();})();&lt;/script&gt;&lt;meta charset=&quot;utf-8&quot;/&gt;&lt;meta content=&quot;width=device-width,initial-scale=1,viewport-fit=cover&quot; name=&quot;viewport&quot;/&gt;&lt;meta content=&quot;light&quot; name=&quot;color-scheme&quot;/&gt;&lt;title&gt;Scale Clock — Ivanov Nikita&lt;/title&gt;
+&lt;html lang=&quot;ru&quot;&gt;&lt;head&gt;&lt;script id=&quot;embedded-progressive-images-v138&quot;&gt;
+(function(){
+  &quot;use strict&quot;;
+  window.__asset=function(path){return parent.__asset(path);};
+  var timer=0;
+  function check(){
+    var frame=window.frameElement;
+    if (!frame) return;
+    var outer=frame.getBoundingClientRect();
+    var pw=parent.innerWidth||document.documentElement.clientWidth;
+    var ph=parent.innerHeight||document.documentElement.clientHeight;
+    if (!outer.width || outer.bottom &lt; -800 || outer.top &gt; ph+800) return;
+    var insideWidth=document.documentElement.clientWidth||window.innerWidth||outer.width;
+    var factor=outer.width/insideWidth;
+    document.querySelectorAll(&#x27;img[data-embedded-asset]:not([src])&#x27;).forEach(function(img){
+      var r=img.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      var top=outer.top+r.top*factor, bottom=outer.top+r.bottom*factor;
+      var left=outer.left+r.left*factor, right=outer.left+r.right*factor;
+      if (bottom &lt; -650 || top &gt; ph+650 || right &lt; -650 || left &gt; pw+650) return;
+      img.loading=&#x27;eager&#x27;;
+      img.decoding=&#x27;async&#x27;;
+      img.src=window.__asset(img.getAttribute(&#x27;data-embedded-asset&#x27;));
+    });
+  }
+  function schedule(){
+    if (timer) return;
+    timer=setTimeout(function(){timer=0;check();},120);
+  }
+  function start(){
+    check();
+    try{
+      parent.addEventListener(&#x27;scroll&#x27;,schedule,{passive:true});
+      parent.addEventListener(&#x27;resize&#x27;,schedule,{passive:true});
+      parent.addEventListener(&#x27;touchend&#x27;,schedule,{passive:true});
+      var route=window.frameElement &amp;&amp; window.frameElement.closest(&#x27;section.route-page&#x27;);
+      if (route) new MutationObserver(schedule).observe(route,{attributes:true,attributeFilter:[&#x27;class&#x27;]});
+    }catch(e){}
+    window.addEventListener(&#x27;resize&#x27;,schedule,{passive:true});
+    window.addEventListener(&#x27;load&#x27;,schedule,{passive:true});
+    document.addEventListener(&#x27;touchend&#x27;,schedule,{passive:true});
+    // Gallery tracks change transform/classes without scrolling the main page.
+    new MutationObserver(schedule).observe(document.body,{attributes:true,attributeFilter:[&#x27;class&#x27;,&#x27;style&#x27;],childList:true,subtree:true});
+    setTimeout(check,450);
+    setTimeout(check,1600);
+  }
+  if(document.readyState===&#x27;loading&#x27;) document.addEventListener(&#x27;DOMContentLoaded&#x27;,start,{once:true});
+  else start();
+})();
+&lt;/script&gt;&lt;meta charset=&quot;utf-8&quot;/&gt;&lt;meta content=&quot;width=device-width,initial-scale=1,viewport-fit=cover&quot; name=&quot;viewport&quot;/&gt;&lt;meta content=&quot;light&quot; name=&quot;color-scheme&quot;/&gt;&lt;title&gt;Scale Clock — Ivanov Nikita&lt;/title&gt;
 &lt;style&gt;
   :root{color-scheme:light}*{box-sizing:border-box}
   html,body{margin:0;padding:0;background:#fff;color:#070707;overflow-x:hidden}
