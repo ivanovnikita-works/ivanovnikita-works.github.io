@@ -37,9 +37,17 @@
     if(Object.prototype.hasOwnProperty.call(dictionary,key)) return dictionary[key];
     const match=key.match(/^(\d+)\s+из\s+(\d+)$/i);
     if(match)return match[1]+' of '+match[2];
-    if(key.startsWith('Открыть проект '))return 'Open project '+(dictionary[key.slice(15)]||key.slice(15));
-    if(key.startsWith('Предыдущая работа:'))return 'Previous project: '+(dictionary[clean(key.slice(19))]||clean(key.slice(19)));
-    if(key.startsWith('Следующая работа:'))return 'Next project: '+(dictionary[clean(key.slice(17))]||clean(key.slice(17)));
+    if(key==='Поиск')return 'Search';
+    if(key==='Открыть навигацию')return 'Open navigation';
+    if(key==='Закрыть навигацию')return 'Close navigation';
+    if(key==='карусель')return 'carousel';
+    if(key.startsWith('UNDDER — кадр '))return 'UNDDER — frame '+key.slice(15);
+    if(key.startsWith('Брендбук Short Eye — страница '))return 'Short Eye brandbook — page '+key.slice(29);
+    if(key.startsWith('Разворот '))return 'Spread '+key.slice(9);
+    if(key.startsWith('Страница '))return 'Page '+key.slice(9);
+    if(key.startsWith('Открыть проект '))return 'Open project '+(dictionary[key.slice('Открыть проект '.length)]||key.slice('Открыть проект '.length));
+    if(key.startsWith('Предыдущая работа:'))return 'Previous project: '+(dictionary[clean(key.slice('Предыдущая работа:'.length))]||clean(key.slice('Предыдущая работа:'.length)));
+    if(key.startsWith('Следующая работа:'))return 'Next project: '+(dictionary[clean(key.slice('Следующая работа:'.length))]||clean(key.slice('Следующая работа:'.length)));
     return null;
   }
   function isProtected(node){
