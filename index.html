@@ -34,7 +34,24 @@
 </script>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>IVANOV NIKITA — Portfolio</title>
+<title>IVANOV NIKITA — Портфолио дизайнера</title>
+<meta name="description" content="Портфолио Никиты Иванова: айдентика, графический дизайн, журналы, упаковка, мерч и творческое руководство."/>
+<meta name="robots" content="index, follow"/>
+<meta name="theme-color" content="#ffffff"/>
+<link rel="canonical" href="https://uundderr.github.io/ivanov-nikita-portfolio/"/>
+<link rel="icon" href="./favicon.svg" type="image/svg+xml" sizes="any"/>
+<meta property="og:type" content="website"/>
+<meta property="og:locale" content="ru_RU"/>
+<meta property="og:site_name" content="IVANOV NIKITA"/>
+<meta property="og:title" content="IVANOV NIKITA — Портфолио дизайнера"/>
+<meta property="og:description" content="Айдентика, графический дизайн, журналы, упаковка и авторские проекты."/>
+<meta property="og:url" content="https://uundderr.github.io/ivanov-nikita-portfolio/"/>
+<meta property="og:image" content="https://uundderr.github.io/ivanov-nikita-portfolio/assets/project_cover_olya_mag_v113.jpg"/>
+<meta property="og:image:alt" content="Портфолио IVANOV NIKITA — проект ОЛЯ magazine"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="IVANOV NIKITA — Портфолио дизайнера"/>
+<meta name="twitter:description" content="Айдентика, графический дизайн, журналы, упаковка и авторские проекты."/>
+<meta name="twitter:image" content="https://uundderr.github.io/ivanov-nikita-portfolio/assets/project_cover_olya_mag_v113.jpg"/>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400&amp;family=Inter:wght@400&amp;family=Lato:wght@300;400;700&amp;display=swap" rel="stylesheet"/>
@@ -5765,11 +5782,62 @@ window.addEventListener(&#x27;resize&#x27;,fitPage,{passive:true});fitPage();
   }
   syncAdjacentProjects(document.body.dataset.route || "projects");
 
+  // Stable shareable URLs for the ten projects; compatible with GitHub Pages.
+  const routeToSlug = Object.freeze({
+    "project-olya-magazine": "olya-magazine",
+    "project-olya-clothes": "olya-merch",
+    "project-short-eye": "short-eye",
+    "project-scale-clock": "scale-clock",
+    "project-undder-magazine": "undder-magazine",
+    "project-scale-merch": "scale-merch",
+    "project-posters": "posters",
+    "project-nix": "nix",
+    "project-upnight": "upnight",
+    "project-duvet": "duvet"
+  });
+  const slugToRoute = Object.fromEntries(Object.entries(routeToSlug).map(([route, slug]) => [slug, route]));
+  const knownRoutes = new Set(routePages.map(page => page.dataset.routePage));
+  const routeTitles = Object.freeze({
+    projects: "Проекты", gallery: "Галерея", contacts: "Контакты",
+    "project-olya-magazine": "ОЛЯ magazine",
+    "project-olya-clothes": "ОЛЯ — мерч",
+    "project-short-eye": "Short Eye",
+    "project-scale-clock": "Scale Clock",
+    "project-undder-magazine": "UNDDER magazine",
+    "project-scale-merch": "SCALE — мерч",
+    "project-posters": "Постеры",
+    "project-nix": "NIX",
+    "project-upnight": "Up Night",
+    "project-duvet": "Duvet"
+  });
+  function routeFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const project = params.get("project");
+    if (project && slugToRoute[project]) return slugToRoute[project];
+    const section = params.get("page");
+    if (section === "gallery" || section === "contacts") return section;
+    return "projects";
+  }
+  function urlForRoute(route) {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("project");
+    url.searchParams.delete("page");
+    if (routeToSlug[route]) url.searchParams.set("project", routeToSlug[route]);
+    else if (route === "gallery" || route === "contacts") url.searchParams.set("page", route);
+    return url.pathname + url.search + url.hash;
+  }
+  function updateRouteTitle(route) {
+    document.title = route === "projects"
+      ? "IVANOV NIKITA — Портфолио дизайнера"
+      : (routeTitles[route] || "Проект") + " — IVANOV NIKITA";
+  }
+
   function applyRoute(route) {
     if (route !== "projects") resetMobileProjectGrid();
     routePages.forEach(page => page.classList.toggle("active", page.dataset.routePage === route));
     document.body.dataset.route = route;
     syncAdjacentProjects(route);
+    updateRouteTitle(route);
     window.scrollTo(0, 0);
     if (route === "project-olya-magazine") requestAnimationFrame(loadCurrentProject);
   }
@@ -5777,6 +5845,10 @@ window.addEventListener(&#x27;resize&#x27;,fitPage,{passive:true});fitPage();
   // Route transition: only the active page fades; the fixed header is preserved.
   let routeTransitionTimer = null;
   function setRoute(route) {
+    if (!knownRoutes.has(route)) return;
+    const nextUrl = urlForRoute(route);
+    const currentUrl = window.location.pathname + window.location.search + window.location.hash;
+    if (nextUrl !== currentUrl) window.history.pushState({route: route}, "", nextUrl);
     if (route === document.body.dataset.route) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       clearTimeout(routeTransitionTimer);
@@ -5792,6 +5864,13 @@ window.addEventListener(&#x27;resize&#x27;,fitPage,{passive:true});fitPage();
       routeTransitionTimer = null;
     }, 170);
   }
+
+  window.addEventListener("popstate", () => {
+    clearTimeout(routeTransitionTimer);
+    routeTransitionTimer = null;
+    document.body.classList.remove("pf-route-leaving");
+    applyRoute(routeFromUrl());
+  });
 
   routeButtons.forEach(button => {
     button.addEventListener("click", event => {
@@ -5946,7 +6025,7 @@ window.addEventListener(&#x27;resize&#x27;,fitPage,{passive:true});fitPage();
   ["mag", "brand", "mmag", "mbrand"].forEach(render);
   window.addEventListener("resize", () => ["mag", "brand", "mmag", "mbrand"].forEach(render));
 
-  setRoute("projects");
+  applyRoute(routeFromUrl());
 })();
 </script>
 <script>
