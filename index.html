@@ -3,7 +3,11 @@
 <html lang="ru">
 <head><script id="portfolio-route-media-loader-v135">
 (function(){"use strict";
-  window.__asset=function(path){return path;};
+  // Resolve every local asset from the site root, including srcdoc iframes and direct project URLs.
+  window.__asset=function(path){
+    if (!path || /^(?:[a-z][a-z0-9+.-]*:|\/\/|\/)/i.test(path)) return path;
+    return new URL(path.replace(/^\.\//,''), window.location.origin + '/').href;
+  };
   // Load the visible route. All other project photos keep their asset address
   // in data-embedded-asset until the user opens that project.
   function mount(root){
@@ -11,6 +15,8 @@
       if(im.hasAttribute('src'))return;
       var page=im.closest('section.route-page');
       if(page && !page.classList.contains('active'))return;
+      // Mobile browsers may postpone lazy images indefinitely in absolute-positioned artboards.
+      if (window.matchMedia && window.matchMedia('(max-width: 720px)').matches) im.loading='eager';
       im.src=window.__asset(im.getAttribute('data-embedded-asset'));
     });
   }
@@ -25,7 +31,7 @@
       queueMicrotask(function(){scheduled=false;mount();});
     }
     var observer=new MutationObserver(schedule);
-    observer.observe(document.body,{attributes:true,attributeFilter:['data-route']});
+    observer.observe(document.body,{attributes:true,attributeFilter:['data-route'],childList:true,subtree:true});
     sections.forEach(function(page){observer.observe(page,{attributes:true,attributeFilter:['class']});});
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
@@ -7065,6 +7071,11 @@ img.pf-photo-reveal-v117:not(.pf-photo-shown-v117) {
 @media (prefers-reduced-motion: reduce) {
   img.pf-photo-reveal-v117 { transition: none !important; opacity: 1 !important; }
 }
+/* Mobile: image visibility must not depend on a scroll observer firing. */
+@media (max-width: 720px) {
+  img.pf-photo-reveal-v117,
+  img.pf-photo-reveal-v117:not(.pf-photo-shown-v117) { opacity: 1 !important; transition: none !important; }
+}
 </style>
 <script id="pf-scroll-photo-reveal-v117" data-scroll-photo-reveal="v117">
 /* Static photographs only. Slide content and video remain untouched. */
@@ -7074,7 +7085,8 @@ img.pf-photo-reveal-v117:not(.pf-photo-shown-v117) {
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var CSS_TEXT = 'img.pf-photo-reveal-v117{transition:opacity 760ms cubic-bezier(.22,1,.36,1)!important}' +
     'img.pf-photo-reveal-v117:not(.pf-photo-shown-v117){opacity:0!important}' +
-    '@media(prefers-reduced-motion:reduce){img.pf-photo-reveal-v117{transition:none!important;opacity:1!important}}';
+    '@media(prefers-reduced-motion:reduce){img.pf-photo-reveal-v117{transition:none!important;opacity:1!important}}' +
+    '@media(max-width:720px){img.pf-photo-reveal-v117,img.pf-photo-reveal-v117:not(.pf-photo-shown-v117){opacity:1!important;transition:none!important}}';
   // Deliberately limited to image elements in STATIC compositions. No generic figure
   // selector: the site also has editorial brandbook, product and magazine sliders.
   var staticSelectors = [
@@ -7138,7 +7150,7 @@ img.pf-photo-reveal-v117:not(.pf-photo-shown-v117) {
     if (img.dataset.pfPhotoRevealV117 === '1') return;
     if (sliderSelector && img.closest(sliderSelector)) return;
     img.dataset.pfPhotoRevealV117 = '1';
-    if (reduce) return;
+    if (reduce || (window.matchMedia && window.matchMedia('(max-width: 720px)').matches)) return;
     img.classList.add('pf-photo-reveal-v117');
     if (!isEmbedded) observer.observe(img);
   }
