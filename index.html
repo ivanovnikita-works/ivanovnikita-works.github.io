@@ -7242,9 +7242,10 @@ img.pf-photo-reveal-v117:not(.pf-photo-shown-v117) {
   img.pf-photo-reveal-v117 { transition: none !important; opacity: 1 !important; }
 }
 
+/* Mobile photos are hidden only when pre-armed off-screen by the script.
+   Every slide and every already-visible image remains opaque at all times. */
 @media (max-width: 720px) {
-  img.pf-photo-reveal-v117,
-  img.pf-photo-reveal-v117:not(.pf-photo-shown-v117) { opacity: 1 !important; transition: none !important; }
+  img.pf-photo-reveal-v117.pf-photo-shown-v117 { opacity: 1 !important; }
 }
 </style>
 <script id="pf-scroll-photo-reveal-v117" data-scroll-photo-reveal="v117">
@@ -7256,8 +7257,7 @@ img.pf-photo-reveal-v117:not(.pf-photo-shown-v117) {
   var mobile = window.matchMedia && window.matchMedia('(max-width: 720px)').matches;
   var CSS_TEXT = 'img.pf-photo-reveal-v117{transition:opacity 760ms cubic-bezier(.22,1,.36,1)!important}' +
     'img.pf-photo-reveal-v117:not(.pf-photo-shown-v117){opacity:0!important}' +
-    '@media(prefers-reduced-motion:reduce){img.pf-photo-reveal-v117{transition:none!important;opacity:1!important}}' +
-    '@media(max-width:720px){img.pf-photo-reveal-v117,img.pf-photo-reveal-v117:not(.pf-photo-shown-v117){opacity:1!important;transition:none!important}}';
+    '@media(prefers-reduced-motion:reduce){img.pf-photo-reveal-v117{transition:none!important;opacity:1!important}}';
   // Deliberately limited to image elements in STATIC compositions. No generic figure
   // selector: the site also has editorial brandbook, product and magazine sliders.
   var staticSelectors = [
@@ -7298,16 +7298,8 @@ img.pf-photo-reveal-v117:not(.pf-photo-shown-v117) {
     function makeVisible() {
       if (!img.isConnected) return;
       requestAnimationFrame(function () {
-        // Mobile images remain visible by default: animate using WAAPI rather
-        // than CSS opacity:0, which could leave blank photos in mobile Safari.
-        if (mobile && !reduce && img.animate &&
-            !img.closest('.projects-page .work-card:nth-of-type(-n+2)')) {
-          try {
-            img.animate([{opacity:0},{opacity:1}], {
-              duration:760, easing:'cubic-bezier(.22,1,.36,1)', iterations:1
-            });
-          } catch(e) { /* Visible image is the fail-safe. */ }
-        }
+        // CSS transitions only pre-hidden, off-screen static photographs.
+        // No opacity reset or WAAPI animation on already visible slides.
         img.classList.add('pf-photo-shown-v117');
       });
     }
@@ -7318,6 +7310,8 @@ img.pf-photo-reveal-v117:not(.pf-photo-shown-v117) {
     else {
       img.addEventListener('load', makeVisible, {once:true});
       img.addEventListener('error', makeVisible, {once:true});
+      // Mobile network / decoder fail-safe: never leave a photograph hidden.
+      if (mobile) setTimeout(makeVisible, 1800);
     }
   }
   var observer = new IntersectionObserver(function(entries){
@@ -7332,9 +7326,27 @@ img.pf-photo-reveal-v117:not(.pf-photo-shown-v117) {
     if (sliderSelector && img.closest(sliderSelector)) return;
     img.dataset.pfPhotoRevealV117 = '1';
     if (reduce) return;
-    // Mobile: keep the image visible and animate it only when it enters view.
-    // Desktop retains its existing CSS scroll-reveal behaviour unchanged.
-    if (!mobile) img.classList.add('pf-photo-reveal-v117');
+    if (mobile) {
+      // The iframe has its own compositing layer. Never hide a loaded
+      // photo inside it while the parent page or its sliders are moving.
+      if (isEmbedded) {
+        img.dataset.pfPhotoShownV117 = '1';
+        img.classList.add('pf-photo-shown-v117');
+        return;
+      }
+      var page=img.closest('section.route-page');
+      var hiddenPage=page && !page.classList.contains('active');
+      var r=img.getBoundingClientRect();
+      var vh=window.innerHeight || document.documentElement.clientHeight;
+      // Arm the transition BEFORE the photograph becomes visible. If it
+      // has already entered the viewport, leave it fully opaque forever.
+      if (!hiddenPage && (!r.width || !r.height || r.top<=vh*0.95)) {
+        img.dataset.pfPhotoShownV117 = '1';
+        img.classList.add('pf-photo-shown-v117');
+        return;
+      }
+    }
+    img.classList.add('pf-photo-reveal-v117');
     if (!isEmbedded) observer.observe(img);
   }
   var mainPhotos=[];
@@ -7349,7 +7361,11 @@ img.pf-photo-reveal-v117:not(.pf-photo-shown-v117) {
     var vh=window.innerHeight || document.documentElement.clientHeight;
     var vw=window.innerWidth || document.documentElement.clientWidth;
     mainPhotos.forEach(function(img){
-      if (img.dataset.pfPhotoShownV117==='1') return;
+      // Registration deliberately excludes all sliders and visible-first
+      // images; mobile scrolling must respect that exact exclusion.
+      if (img.dataset.pfPhotoRevealV117!=='1' ||
+          img.dataset.pfPhotoShownV117==='1' ||
+          (sliderSelector && img.closest(sliderSelector))) return;
       var rect=img.getBoundingClientRect();
       if (rect.width>0 && rect.height>0 && rect.bottom>0 &&
           rect.top<vh*0.95 && rect.right>0 && rect.left<vw) shown(img);
