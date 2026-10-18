@@ -1,7 +1,37 @@
 <!DOCTYPE html>
 
 <html lang="ru">
-<head><script>(function(){"use strict";var cache;window.__asset=function(path){if(typeof path!=="string"||path.slice(0,7)!=="assets/")return path;return path;};function mount(){document.querySelectorAll("img[data-embedded-asset]").forEach(function(im){im.src=window.__asset(im.getAttribute("data-embedded-asset"));});}if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',mount,{once:true});}else mount();})();</script>
+<head><script id="portfolio-route-media-loader-v135">
+(function(){"use strict";
+  window.__asset=function(path){return path;};
+  // Load the visible route. All other project photos keep their asset address
+  // in data-embedded-asset until the user opens that project.
+  function mount(root){
+    (root||document).querySelectorAll('img[data-embedded-asset]').forEach(function(im){
+      if(im.hasAttribute('src'))return;
+      var page=im.closest('section.route-page');
+      if(page && !page.classList.contains('active'))return;
+      im.src=window.__asset(im.getAttribute('data-embedded-asset'));
+    });
+  }
+  window.__mountPortfolioAssets=mount;
+  function init(){
+    mount();
+    var sections=document.querySelectorAll('section.route-page');
+    var scheduled=false;
+    function schedule(){
+      if(scheduled)return;
+      scheduled=true;
+      queueMicrotask(function(){scheduled=false;mount();});
+    }
+    var observer=new MutationObserver(schedule);
+    observer.observe(document.body,{attributes:true,attributeFilter:['data-route']});
+    sections.forEach(function(page){observer.observe(page,{attributes:true,attributeFilter:['class']});});
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
+  else init();
+})();
+</script>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>IVANOV NIKITA — Portfolio</title>
@@ -3346,21 +3376,21 @@ html body > main.portfolio-page > nav.portfolio-project-nav .project-nav-short {
 <article class="work-card crop-04" data-project="4">
 <button aria-label="РАЗРАБОТКА НАСТОЛЬНЫХ ЧАСОВ “SCALE CLOCK”" class="work-button" data-route="project-scale-clock" type="button">
 <div class="work-title">РАЗРАБОТКА НАСТОЛЬНЫХ ЧАСОВ “SCALE CLOCK”</div>
-<div class="work-image"><img alt="РАЗРАБОТКА НАСТОЛЬНЫХ ЧАСОВ “SCALE CLOCK”" data-project-cover-v113="scale_clock" data-embedded-asset="assets/project_cover_scale_clock_v113.png" loading="lazy" decoding="async"/></div>
+<div class="work-image"><img alt="РАЗРАБОТКА НАСТОЛЬНЫХ ЧАСОВ “SCALE CLOCK”" data-project-cover-v113="scale_clock" data-embedded-asset="assets/project_cover_scale_clock_v113.png" loading="eager" decoding="async"/></div>
 <div class="work-meta">ДИЗАЙН ИЗДЕЛИЯ, ТВОРЧЕСКОЕ РУКОВОДСТВО</div>
 </button>
 </article>
 <article class="work-card crop-05" data-project="5">
 <button aria-label="UNDDER MAGAZINE" class="work-button" data-route="project-undder-magazine" type="button">
 <div class="work-title">UNDDER MAGAZINE</div>
-<div class="work-image"><img alt="UNDDER MAGAZINE" data-project-cover-v113="undder" data-embedded-asset="assets/project_cover_undder_v113.png" loading="lazy" decoding="async"/></div>
+<div class="work-image"><img alt="UNDDER MAGAZINE" data-project-cover-v113="undder" data-embedded-asset="assets/project_cover_undder_v113.png" loading="eager" decoding="async"/></div>
 <div class="work-meta">ФОТОГРАФИЯ, РЕДАКЦИОННЫЙ ДИЗАЙН</div>
 </button>
 </article>
 <article class="work-card crop-06" data-project="6">
 <button aria-label="РАЗРАБОТКА ГРАФИКИ ДЛЯ МЕРЧА “SCALE”" class="work-button" data-route="project-scale-merch" type="button">
 <div class="work-title">РАЗРАБОТКА ГРАФИКИ ДЛЯ МЕРЧА “SCALE”</div>
-<div class="work-image"><img alt="РАЗРАБОТКА ГРАФИКИ ДЛЯ МЕРЧА “SCALE”" data-project-cover-v113="scale_merch" data-embedded-asset="assets/project_cover_scale_merch_v113.png" loading="lazy" decoding="async"/></div>
+<div class="work-image"><img alt="РАЗРАБОТКА ГРАФИКИ ДЛЯ МЕРЧА “SCALE”" data-project-cover-v113="scale_merch" data-embedded-asset="assets/project_cover_scale_merch_v113.png" loading="eager" decoding="async"/></div>
 <div class="work-meta">ДИЗАЙН ОДЕЖДЫ, АВТОРСКИЕ ПРИНТЫ</div>
 </button>
 </article>
