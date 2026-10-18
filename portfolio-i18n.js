@@ -9,6 +9,15 @@
   const clean=s=>(s||'').replace(/\u00a0/g,' ').replace(/\s+/g,' ').trim();
   const cyr=/[а-яё]/i;
   const baseTitle='IVANOV NIKITA — Design Portfolio';
+  const RussianRoutes={
+    projects:'IVANOV NIKITA — Портфолио дизайнера',
+    gallery:'Галерея',contacts:'Контакты',
+    'project-olya-magazine':'ОЛЯ magazine','project-olya-clothes':'ОЛЯ — мерч',
+    'project-short-eye':'Short Eye','project-scale-clock':'Scale Clock',
+    'project-undder-magazine':'UNDDER magazine','project-scale-merch':'SCALE — мерч',
+    'project-posters':'Постеры','project-nix':'NIX',
+    'project-upnight':'Up Night','project-duvet':'Duvet'
+  };
   const EnglishRoutes={
     projects:'Projects',gallery:'Gallery',contacts:'Contact',
     'project-olya-magazine':'OLYA Magazine','project-olya-clothes':'OLYA — Apparel',
@@ -97,7 +106,8 @@
         bindToggle(button);
     });
     doc.querySelectorAll('button[data-i18n-toggle]').forEach(button=>{
-      button.textContent=language==='en'?'EN':'RU';
+      const visibleLanguage=language==='en'?'EN':'RU';
+      if(button.textContent!==visibleLanguage)button.textContent=visibleLanguage;
       button.setAttribute('aria-label',language==='en'?'Switch to Russian':'Switch to English');
       button.setAttribute('title',language==='en'?'Switch to Russian':'Switch to English');
       button.setAttribute('lang',language);
@@ -143,8 +153,7 @@
       if(document.title!==title)document.title=title;
     }else{
       const title=route==='projects'?'IVANOV NIKITA — Портфолио дизайнера':
-        (document.title===baseTitle||document.title.includes(' — IVANOV NIKITA')?
-          ((EnglishRoutes[route]||'')+' — IVANOV NIKITA') :document.title);
+        (RussianRoutes[route]||'Проект')+' — IVANOV NIKITA';
       if(document.title!==title)document.title=title;
     }
     const description=document.querySelector('meta[name="description"]');
