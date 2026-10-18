@@ -3252,33 +3252,49 @@ body.pf-route-leaving > main.portfolio-page > .route-page.active {
 }
 </style>
 
-<style id="portfolio-project-navigation-v132">
-/* Portfolio project navigation, between the active project content and shared footer. */
+<style id="portfolio-project-navigation-v133">
+/* Only previous and next work, in the original project-grid order. */
 html body > main.portfolio-page > nav.portfolio-project-nav { display:none !important; }
 html body[data-route^="project-"] > main.portfolio-page > nav.portfolio-project-nav {
-  display:grid !important; grid-template-columns:repeat(5,minmax(0,1fr));
-  box-sizing:border-box; gap:20px 22px; width:100%; max-width:1280px;
-  margin:0 auto; padding:26px 44px 30px; background:#fff; position:relative;
-  z-index:1;
+  display:grid !important; grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  box-sizing:border-box; gap:28px; width:100%; max-width:1280px;
+  margin:0 auto; padding:26px 44px 30px; background:#fff; position:relative; z-index:1;
 }
 html body > main.portfolio-page > nav.portfolio-project-nav > button {
-  display:block; box-sizing:border-box; width:100%; min-width:0; height:auto;
+  display:none !important; box-sizing:border-box; width:100%; min-width:0; height:auto;
   margin:0; padding:0; border:0; background:none; color:#262626;
   font:300 11px/1.35 "Inter Tight",Inter,Arial,sans-serif !important;
   text-transform:uppercase; text-align:left; letter-spacing:0;
   overflow-wrap:break-word; cursor:pointer;
 }
+html body[data-route^="project-"] > main.portfolio-page > nav.portfolio-project-nav > button.is-project-prev,
+html body[data-route^="project-"] > main.portfolio-page > nav.portfolio-project-nav > button.is-project-next {
+  display:block !important;
+}
+html body > main.portfolio-page > nav.portfolio-project-nav > button.is-project-prev { grid-column:1; text-align:left; }
+html body > main.portfolio-page > nav.portfolio-project-nav > button.is-project-next { grid-column:2; text-align:right; }
+html body > main.portfolio-page > nav.portfolio-project-nav > button.is-project-prev::before,
+html body > main.portfolio-page > nav.portfolio-project-nav > button.is-project-next::before {
+  display:block; margin-bottom:9px;
+  font:300 10px/1.2 "Inter Tight",Inter,Arial,sans-serif;
+  color:#858585; text-decoration:none;
+}
+html body > main.portfolio-page > nav.portfolio-project-nav > button.is-project-prev::before { content:"ПРЕДЫДУЩАЯ РАБОТА"; }
+html body > main.portfolio-page > nav.portfolio-project-nav > button.is-project-next::before { content:"СЛЕДУЮЩАЯ РАБОТА"; }
 html body > main.portfolio-page > nav.portfolio-project-nav > button:hover { text-decoration:underline; text-underline-offset:3px; }
 html body > main.portfolio-page > nav.portfolio-project-nav > button:focus-visible { outline:1px solid #262626; outline-offset:4px; }
 html body > main.portfolio-page > nav.portfolio-project-nav .project-nav-short { display:none; }
 @media (max-width:720px) {
   html body[data-route^="project-"] > main.portfolio-page > nav.portfolio-project-nav {
-    display:flex !important; flex-direction:column; align-items:flex-start;
-    gap:14px; width:100%; max-width:none; margin:0; padding:26px 20px 32px;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px;
+    width:100%; max-width:none; margin:0; padding:26px 20px 32px;
   }
   html body > main.portfolio-page > nav.portfolio-project-nav > button {
-    width:auto; min-height:22px; font:300 11px/22px "Inter Tight",Inter,Arial,sans-serif !important;
-    white-space:nowrap; text-align:left;
+    font:300 11px/1.5 "Inter Tight",Inter,Arial,sans-serif !important;
+  }
+  html body > main.portfolio-page > nav.portfolio-project-nav > button.is-project-prev::before,
+  html body > main.portfolio-page > nav.portfolio-project-nav > button.is-project-next::before {
+    font-size:9px; margin-bottom:8px;
   }
   html body > main.portfolio-page > nav.portfolio-project-nav .project-nav-full { display:none; }
   html body > main.portfolio-page > nav.portfolio-project-nav .project-nav-short { display:inline; }
@@ -5689,10 +5705,41 @@ window.addEventListener(&#x27;resize&#x27;,fitPage,{passive:true});fitPage();
   const routePages = Array.from(document.querySelectorAll("[data-route-page]"));
   const routeButtons = Array.from(document.querySelectorAll("[data-route]"));
 
+  // The visible footer navigation always consists of exactly two works.
+  // Its order matches the projects grid; at either end it wraps around.
+  const projectNav = document.querySelector(".portfolio-project-nav");
+  const projectNavButtons = projectNav
+    ? Array.from(projectNav.querySelectorAll('button[data-route]'))
+    : [];
+  const projectNavRoutes = projectNavButtons.map(button => button.dataset.route);
+  function syncAdjacentProjects(route) {
+    const activeIndex = projectNavRoutes.indexOf(route);
+    projectNavButtons.forEach(button => {
+      button.classList.remove("is-project-prev", "is-project-next");
+      button.removeAttribute("aria-label");
+      button.setAttribute("aria-hidden", "true");
+      button.tabIndex = -1;
+    });
+    if (activeIndex < 0 || projectNavRoutes.length < 3) return;
+    const count = projectNavRoutes.length;
+    const prev = projectNavButtons[(activeIndex - 1 + count) % count];
+    const next = projectNavButtons[(activeIndex + 1) % count];
+    prev.classList.add("is-project-prev");
+    next.classList.add("is-project-next");
+    for (const [button, description] of [[prev, "Предыдущая работа"], [next, "Следующая работа"]]) {
+      const title = button.querySelector(".project-nav-full")?.textContent?.trim() || "";
+      button.setAttribute("aria-label", description + ": " + title);
+      button.removeAttribute("aria-hidden");
+      button.tabIndex = 0;
+    }
+  }
+  syncAdjacentProjects(document.body.dataset.route || "projects");
+
   function applyRoute(route) {
     if (route !== "projects") resetMobileProjectGrid();
     routePages.forEach(page => page.classList.toggle("active", page.dataset.routePage === route));
     document.body.dataset.route = route;
+    syncAdjacentProjects(route);
     window.scrollTo(0, 0);
     if (route === "project-olya-magazine") requestAnimationFrame(loadCurrentProject);
   }
