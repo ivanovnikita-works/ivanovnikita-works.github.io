@@ -6433,17 +6433,25 @@ window.addEventListener(&#x27;resize&#x27;,fitPage,{passive:true});fitPage();
       stage.style.transformOrigin='top left';
     });
   }
+  // A desktop photo can have no src until it reaches the viewport.
+  // Mobile compositions must use the original path, never that src state.
+  function originalPhotoUrl(img){
+    if (!img) return '';
+    return img.getAttribute('src') ||
+      (img.getAttribute('data-embedded-asset') ?
+       window.__asset(img.getAttribute('data-embedded-asset')) : '');
+  }
   function copyUndderMobileStaticImages(){
     var cover=document.querySelector('.undder-imgbox[style*="left:421px"][style*="top:162px"] img');
     var archives=Array.prototype.slice.call(document.querySelectorAll('.undder-extra img'));
     document.querySelectorAll('[data-copy-source="cover"]').forEach(function(img){
-      if(cover&&!img.src) img.src=cover.src;
+      if(cover&&!img.getAttribute('src')) img.src=originalPhotoUrl(cover);
     });
     document.querySelectorAll('[data-copy-source="archive1"]').forEach(function(img){
-      if(archives[0]&&!img.src) img.src=archives[0].src;
+      if(archives[0]&&!img.getAttribute('src')) img.src=originalPhotoUrl(archives[0]);
     });
     document.querySelectorAll('[data-copy-source="archive2"]').forEach(function(img){
-      if(archives[1]&&!img.src) img.src=archives[1].src;
+      if(archives[1]&&!img.getAttribute('src')) img.src=originalPhotoUrl(archives[1]);
     });
   }
   function initUndderMobileSliders(){
@@ -6452,8 +6460,8 @@ window.addEventListener(&#x27;resize&#x27;,fitPage,{passive:true});fitPage();
       if(slider.dataset.mobileReady==='1')return;
       var key=slider.dataset.slider;
       var sources=Array.prototype.slice.call(document.querySelectorAll('.undder-slider[data-slider="'+key+'"] .undder-slide-card img'))
-        .map(function(img){return img.src;}).filter(Boolean);
-      if(!sources.length)return; // Retry at window.load if the backing images are not mounted yet.
+        .map(originalPhotoUrl).filter(Boolean);
+      if(!sources.length)return; // Source files may be unavailable; retry on window load.
       slider.dataset.mobileReady='1';
       var track=slider.querySelector('.umob-track');
       var dotsBox=slider.querySelector('.umob-dots');
@@ -6543,20 +6551,26 @@ window.addEventListener(&#x27;resize&#x27;,fitPage,{passive:true});fitPage();
     });
   }
 
+  function originalScalePhotoUrl(img) {
+    if (!img) return '';
+    return img.getAttribute('src') ||
+      (img.getAttribute('data-embedded-asset') ?
+       window.__asset(img.getAttribute('data-embedded-asset')) : '');
+  }
   function initScaleClothesMobileV54(){
     var hero = document.querySelector('.scmerch-hero-img img');
     document.querySelectorAll('[data-scale-clothes-copy="hero"]').forEach(function(img){
-      if (hero && !img.src) img.src = hero.src;
+      if (hero && !img.getAttribute('src')) img.src = originalScalePhotoUrl(hero);
     });
 
     document.querySelectorAll('.scl-m-gallery').forEach(function(gallery){
       if (gallery.dataset.readyV54 === '1') return;
-      gallery.dataset.readyV54 = '1';
       var key = gallery.dataset.product;
       var product = gallery.closest('.scl-m-product');
       var scrollbar = product ? product.querySelector('.scl-m-scrollbar span') : null;
-      var srcs = Array.prototype.slice.call(document.querySelectorAll('.scmerch-product[data-product="' + key + '"] .scmerch-thumb img')).map(function(img){ return img.src; }).filter(Boolean);
+      var srcs = Array.prototype.slice.call(document.querySelectorAll('.scmerch-product[data-product="' + key + '"] .scmerch-thumb img')).map(originalScalePhotoUrl).filter(Boolean);
       if (!srcs.length) return;
+      gallery.dataset.readyV54 = '1';
       var track = gallery.querySelector('.scl-m-track');
       track.style.width = (390 * srcs.length) + 'px';
       track.innerHTML = srcs.map(function(src, i){
@@ -6588,6 +6602,12 @@ window.addEventListener(&#x27;resize&#x27;,fitPage,{passive:true});fitPage();
 </script>
 <script>
 (function(){
+  function thumbUrl(img) {
+    if (!img) return '';
+    return img.getAttribute('src') ||
+      (img.getAttribute('data-embedded-asset') ?
+       window.__asset(img.getAttribute('data-embedded-asset')) : '');
+  }
   function setupScaleMerchV56(){
     document.querySelectorAll('.scmerch-product').forEach(function(product){
       if(product.dataset.scaleGalleryV56 === '1') return;
@@ -6600,13 +6620,13 @@ window.addEventListener(&#x27;resize&#x27;,fitPage,{passive:true});fitPage();
           ev.preventDefault();
           var img=btn.querySelector('.scmerch-thumb-img');
           if(!img)return;
-          main.src=img.src;
+          main.src=thumbUrl(img);
           main.parentElement.setAttribute('data-photo-index', String(thumbs.indexOf(btn)));
           main.removeAttribute('style');
           thumbs.forEach(function(thumb){thumb.classList.toggle('active',thumb===btn)});
         });
       });
-      main.src=thumbs[0].querySelector('.scmerch-thumb-img').src;
+      main.src=thumbUrl(thumbs[0].querySelector('.scmerch-thumb-img'));
       main.parentElement.setAttribute('data-photo-index','0');
       main.removeAttribute('style');
       thumbs.forEach(function(thumb,i){thumb.classList.toggle('active',i===0)});
