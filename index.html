@@ -3436,12 +3436,12 @@ html body > main.portfolio-page > nav.portfolio-project-nav .project-nav-short {
     .global-mobile-nav-list .mobile-language-toggle {text-transform:uppercase;}
   }
 </style>
-<style id="mobile-hide-extra-project-nav-olya-undder-v142">
-/* Hide only the extra previous/next-project block above the shared footer.
-   The footer itself and desktop navigation are left unchanged. */
+<style id="undder-mobile-duplicate-header-fix-v143">
+/* Keep the single global header: hide duplicated elements drawn over the mobile cover. */
 @media (max-width:720px) {
-  html body[data-route="project-olya-clothes"] > main.portfolio-page > nav.portfolio-project-nav,
-  html body[data-route="project-undder-magazine"] > main.portfolio-page > nav.portfolio-project-nav {
+  .undder-magazine-page .undder-mobile-stage .umob-brand,
+  .undder-magazine-page .undder-mobile-stage .umob-icon-left,
+  .undder-magazine-page .undder-mobile-stage .umob-icon-menu {
     display:none !important;
   }
 }
@@ -4325,7 +4325,7 @@ body{overflow-x:hidden;overflow-y:hidden}
   }
 }
 &lt;/style&gt;
-&lt;style id=&quot;merch-global-header-dedup-v112&quot;&gt;.desktop-stage&gt;.header,.mobile-stage&gt;.m-head{display:none!important}&lt;/style&gt;&lt;/head&gt;
+&lt;style id=&quot;merch-global-header-dedup-v112&quot;&gt;.desktop-stage&gt;.header,.mobile-stage .m-head{display:none!important}&lt;/style&gt;&lt;/head&gt;
 &lt;body&gt;
 &lt;div class=&quot;desktop-canvas&quot; id=&quot;olyaDesktopCanvas&quot;&gt;
 &lt;main class=&quot;stage desktop-stage&quot;&gt;
