@@ -7068,9 +7068,9 @@ window.addEventListener('message',function(event){
  'use strict';
  var uriNode=document.getElementById('short-eye-video-source');
  if(!uriNode)return;
- var videoUri=uriNode.textContent.trim();
- var coverVideoUri=document.getElementById("short-eye-cover-video-source-v113").textContent.trim();
- var previewPoster='assets/inline_c77ddcdc8dc6d209c891.webp';
+ var videoUri=window.__asset(uriNode.textContent.trim());
+ var coverVideoUri=window.__asset(document.getElementById("short-eye-cover-video-source-v113").textContent.trim());
+ var previewPoster=window.__asset('assets/inline_c77ddcdc8dc6d209c891.webp');
  var videos=[].slice.call(document.querySelectorAll('video[data-short-eye-video]'));
  videos.forEach(function(video){video.poster=(video.dataset.shortEyeVideo==='preview'?window.__asset("assets/project_cover_short_eye_v113.jpg") :previewPoster);video.playsInline=true;video.setAttribute('playsinline','');});
  function live(video){
