@@ -5988,10 +5988,28 @@ window.addEventListener(&#x27;resize&#x27;,fitPage,{passive:true});fitPage();
     mobileProjectData.forEach(data=>data.button.setAttribute('aria-expanded','false'));
   }
   function writeMobileProjectDetails(panel,data){
-    panel.querySelector('.work-detail-title').textContent=data.title;
-    panel.querySelector('.work-detail-categories').textContent=data.categories.replace(/\s*,\s*/g,' / ');
-    panel.querySelector('.work-detail-link').setAttribute('aria-label','Открыть проект '+data.title);
+    // The mobile panel stores its original Russian copy. Translate BEFORE
+    // converting comma-separated services into slash-separated display text.
+    const english=document.documentElement.lang==='en';
+    const dictionary=window.__portfolioTranslations||{};
+    const title=english?(dictionary[data.title]||data.title):data.title;
+    const categories=english?(dictionary[data.categories]||data.categories):data.categories;
+    panel.querySelector('.work-detail-title').textContent=title;
+    panel.querySelector('.work-detail-categories').textContent=categories.replace(/\s*,\s*/g,' / ');
+    panel.querySelector('.work-detail-arrow').textContent=english?'VIEW PROJECT':'перейти';
+    panel.querySelector('.work-detail-link').setAttribute('aria-label',(english?'Open project ':'Открыть проект ')+title);
   }
+  // The language can change while the mobile card is already open.
+  // Keep the details synchronized without resetting the selected project.
+  let mobileDetailLanguage=document.documentElement.lang;
+  new MutationObserver(()=>{
+    const next=document.documentElement.lang;
+    if(next===mobileDetailLanguage)return;
+    mobileDetailLanguage=next;
+    const data=mobileProjectData.get(activeProjectId);
+    const panel=data&&mobileDetailRows[data.row];
+    if(panel)writeMobileProjectDetails(panel,data);
+  }).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
   function openMobileProject(data){
     const oldRow=activeRowIndex;
     const oldProject=activeProjectId;
