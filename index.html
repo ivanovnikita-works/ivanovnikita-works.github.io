@@ -3436,6 +3436,16 @@ html body > main.portfolio-page > nav.portfolio-project-nav .project-nav-short {
     .global-mobile-nav-list .mobile-language-toggle {text-transform:uppercase;}
   }
 </style>
+<style id="mobile-hide-extra-project-nav-olya-undder-v142">
+/* Hide only the extra previous/next-project block above the shared footer.
+   The footer itself and desktop navigation are left unchanged. */
+@media (max-width:720px) {
+  html body[data-route="project-olya-clothes"] > main.portfolio-page > nav.portfolio-project-nav,
+  html body[data-route="project-undder-magazine"] > main.portfolio-page > nav.portfolio-project-nav {
+    display:none !important;
+  }
+}
+</style>
 </head>
 <body>
 <header class="site-header" role="banner" data-global-fixed-header="v109">
