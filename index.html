@@ -5064,6 +5064,83 @@ function fitPage(){
   shell.style.height=(height*factor)+&#x27;px&#x27;;
 }
 window.addEventListener(&#x27;resize&#x27;,fitPage,{passive:true});fitPage();
+&lt;/script&gt;&lt;script id=&quot;scale-clock-mobile-scroll-reveal-v144&quot;&gt;
+/* The clock is inside srcdoc: the parent page scrolls, not the iframe.
+   Measure mobile photographs against the parent viewport, once per frame.
+   Already visible images and the cover are never hidden or restarted. */
+(function(){
+  &#x27;use strict&#x27;;
+  var frame=window.frameElement;
+  var stage=document.getElementById(&#x27;mobile-stage&#x27;);
+  if(!frame||!stage||!window.parent)return;
+  var route=frame.closest(&#x27;section.route-page&#x27;);
+  var images=Array.prototype.slice.call(stage.querySelectorAll(&#x27;.photo img&#x27;)).slice(1);
+  if(!images.length)return;
+  var mq=window.matchMedia(&#x27;(max-width:720px)&#x27;);
+  var reduce=window.matchMedia(&#x27;(prefers-reduced-motion: reduce)&#x27;).matches;
+  if(reduce)return;
+  var style=document.createElement(&#x27;style&#x27;);
+  style.id=&#x27;clock-mobile-reveal-style-v144&#x27;;
+  style.textContent=&#x27;@media(max-width:720px){#mobile-stage .photo img.clock-reveal-armed-v144{opacity:0;transition:opacity 850ms cubic-bezier(.22,1,.36,1);will-change:opacity}#mobile-stage .photo img.clock-reveal-armed-v144.clock-reveal-shown-v144{opacity:1;will-change:auto}}@media(prefers-reduced-motion:reduce){#mobile-stage .photo img.clock-reveal-armed-v144{transition:none!important;opacity:1!important}}&#x27;;
+  document.head.appendChild(style);
+  var initialized=false,queued=false;
+  function isActive(){return !route||route.classList.contains(&#x27;active&#x27;);}
+  function screenHeight(){return parent.innerHeight||parent.document.documentElement.clientHeight;}
+  function photoBounds(img,frameTop){
+    var r=img.getBoundingClientRect();
+    return {top:frameTop+r.top,bottom:frameTop+r.bottom,width:r.width,height:r.height};
+  }
+  function reveal(img){
+    if(img.dataset.clockRevealDoneV144===&#x27;1&#x27;||img.dataset.clockRevealWaitingV144===&#x27;1&#x27;)return;
+    function finish(){
+      if(img.dataset.clockRevealDoneV144===&#x27;1&#x27;)return;
+      img.dataset.clockRevealDoneV144=&#x27;1&#x27;;
+      requestAnimationFrame(function(){
+        if(img.isConnected)img.classList.add(&#x27;clock-reveal-shown-v144&#x27;);
+      });
+    }
+    if(img.complete)finish();
+    else{
+      img.dataset.clockRevealWaitingV144=&#x27;1&#x27;;
+      img.addEventListener(&#x27;load&#x27;,finish,{once:true});
+      img.addEventListener(&#x27;error&#x27;,finish,{once:true});
+    }
+  }
+  function check(){
+    queued=false;
+    if(!mq.matches||!isActive())return;
+    var top=frame.getBoundingClientRect().top;
+    var vh=screenHeight();
+    if(!initialized){
+      images.forEach(function(img){
+        var p=photoBounds(img,top);
+        var alreadyVisible=p.width&gt;0&amp;&amp;p.height&gt;0&amp;&amp;p.bottom&gt;0&amp;&amp;p.top&lt;vh*.95;
+        // Never hide an image that the visitor can already see.
+        if(!alreadyVisible)img.classList.add(&#x27;clock-reveal-armed-v144&#x27;);
+        else img.dataset.clockRevealDoneV144=&#x27;1&#x27;;
+      });
+      initialized=true;
+    }
+    images.forEach(function(img){
+      if(!img.classList.contains(&#x27;clock-reveal-armed-v144&#x27;)||img.dataset.clockRevealDoneV144===&#x27;1&#x27;)return;
+      var p=photoBounds(img,top);
+      if(p.width&gt;0&amp;&amp;p.height&gt;0&amp;&amp;p.bottom&gt;0&amp;&amp;p.top&lt;vh*.93)reveal(img);
+    });
+  }
+  function schedule(){
+    if(queued)return;
+    queued=true;
+    requestAnimationFrame(check);
+  }
+  // Set the initial hidden state before the next paint, where possible.
+  check();
+  parent.addEventListener(&#x27;scroll&#x27;,schedule,{passive:true});
+  parent.addEventListener(&#x27;resize&#x27;,schedule,{passive:true});
+  window.addEventListener(&#x27;resize&#x27;,schedule,{passive:true});
+  window.addEventListener(&#x27;load&#x27;,schedule,{once:true});
+  if(route)new MutationObserver(schedule).observe(route,{attributes:true,attributeFilter:[&#x27;class&#x27;]});
+  schedule();
+})();
 &lt;/script&gt;&lt;script id=&quot;scale-clock-parent-navigation&quot;&gt;
 (function(){
   function to(route){try{parent.postMessage({kind:&#x27;ivanov-portfolio-navigate&#x27;,route:route},&#x27;*&#x27;)}catch(e){}}
